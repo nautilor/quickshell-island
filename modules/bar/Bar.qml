@@ -1,90 +1,155 @@
 import Quickshell
 import QtQuick
 import QtQuick.Effects
+import qs.modules.bar.components
 
 PanelWindow {
 	id: bar
 
-	readonly property int hoverHeight: 200
-	readonly property int hoverWidth: 500
+	readonly property int hoverHeight: 232
+	readonly property int hoverWidth: 580
+
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
-	readonly property int hoverRadius: 32
+
 	readonly property int normalRadius: 16
+	readonly property int hoverRadius: 32
+
 	readonly property string backgroundColor: "#111014"
 	readonly property string foregroundColor: "#FAEEF3"
 
 	readonly property int exclusiveZoneHeight: 45
 	readonly property int shadowOffset: 2
 
+	// ─────────────────────────────────────────────
+	// Window
+	// ─────────────────────────────────────────────
+
 	anchors {
 		top: true
 	}
+
 	margins {
 		top: 5
 	}
 
 	exclusionMode: ExclusionMode.Normal
 	exclusiveZone: exclusiveZoneHeight
+
 	implicitHeight: hoverHeight + shadowOffset
-	implicitWidth: hoverWidth
+	implicitWidth: hoverWidth + shadowOffset
+
 	mask: Region {
 		item: barContent
 	}
+
 	color: "transparent"
+
+	// ─────────────────────────────────────────────
+	// Shadow
+	// ─────────────────────────────────────────────
 
 	RectangularShadow {
 		anchors.fill: barContent
-		radius: barMouseArea.containsMouse ? hoverRadius : normalRadius
+
+		radius: barContent.radius
+
 		blur: 5
 		spread: 0.2
+
 		offset: Qt.point(0, shadowOffset)
-		color: Qt.DarkerColor(backgroundColor, 0.5)
+
+		color: Qt.darker(
+			backgroundColor,
+			0.5
+		)
 	}
+
+	// ─────────────────────────────────────────────
+	// Bar
+	// ─────────────────────────────────────────────
 
 	Rectangle {
 		id: barContent
-		anchors.horizontalCenter: parent.horizontalCenter
-		height: barMouseArea.containsMouse ? hoverHeight : normalHeight
-		width: barMouseArea.containsMouse ? hoverWidth : normalWidth
-		color: backgroundColor
-		radius: barMouseArea.containsMouse ? hoverRadius : normalRadius
 
-		Text {
+		anchors.horizontalCenter: parent.horizontalCenter
+
+		height: barMouseArea.containsMouse
+		? hoverHeight
+		: normalHeight
+
+		width: barMouseArea.containsMouse
+		? hoverWidth
+		: normalWidth
+
+		radius: barMouseArea.containsMouse
+		? hoverRadius
+		: normalRadius
+
+		color: backgroundColor
+
+		// ─────────────────────────────────────────
+		// Content
+		// ─────────────────────────────────────────
+
+		Clock {
+			visible: !barMouseArea.containsMouse
+
 			anchors.centerIn: parent
-			text: Qt.formatDateTime(new Date(), "hh:mm:ss")
-			Timer {
-				interval: 1000
-				repeat: true
-				running: true
-				onTriggered: {
-					parent.text = Qt.formatDateTime(new Date(), "hh:mm:ss")
+		}
+
+		QuickPanel {
+			visible: barMouseArea.containsMouse
+			anchors.fill: parent
+			Behavior on scale {
+				NumberAnimation {
+					duration: 100
+					easing.type: Easing.OutCubic
 				}
 			}
-			color: "white"
 		}
+
+		// ─────────────────────────────────────────
+		// Animations
+		// ─────────────────────────────────────────
 
 		Behavior on width {
 			NumberAnimation {
-				duration: 200
-				easing.type: Easing.InOutQuad
+				duration: 100
+				easing.type: barMouseArea.containsMouse
+				? Easing.OutCubic
+				: Easing.InCubic
 			}
 		}
 
 		Behavior on height {
 			NumberAnimation {
-				duration: 200
-				easing.type: Easing.InOutQuad
+				duration: 100
+				easing.type: barMouseArea.containsMouse
+				? Easing.OutCubic
+				: Easing.InCubic
 			}
 		}
 
+		Behavior on radius {
+			NumberAnimation {
+				duration: 250
+				easing.type: Easing.OutCubic
+			}
+		}
+
+		// ─────────────────────────────────────────
+		// Hover detection ONLY
+		// ─────────────────────────────────────────
+
 		MouseArea {
 			id: barMouseArea
+
 			anchors.fill: parent
+
 			hoverEnabled: true
-			onClicked: {
-				console.log("Bar clicked")
-			}
+
+			acceptedButtons: Qt.NoButton
 		}
 	}
 }
