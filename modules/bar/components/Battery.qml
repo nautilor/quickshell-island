@@ -78,9 +78,7 @@ Item {
 
         // Battery is informational, not a toggle.
         enabled: false
-
-        checked: root.pluggedIn
-
+		
         activeIcon: root.batteryIcon
         inactiveIcon: root.batteryIcon
 

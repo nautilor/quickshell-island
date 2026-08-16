@@ -6,14 +6,19 @@ import qs.modules.bar.components
 PanelWindow {
 	id: bar
 
-	readonly property int hoverHeight: 232
+	readonly property int maxHeight: 700
+	readonly property int maxWidth: 700
+
+	readonly property int minHeight: 400
+
+	readonly property int hoverHeight: 162
 	readonly property int hoverWidth: 580
 
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
 
 	readonly property int normalRadius: 16
-	readonly property int hoverRadius: 32
+	readonly property int hoverRadius: 24
 
 	readonly property string backgroundColor: "#111014"
 	readonly property string foregroundColor: "#FAEEF3"
@@ -36,8 +41,8 @@ PanelWindow {
 	exclusionMode: ExclusionMode.Normal
 	exclusiveZone: exclusiveZoneHeight
 
-	implicitHeight: hoverHeight + shadowOffset
-	implicitWidth: hoverWidth + shadowOffset
+	implicitHeight: maxHeight + shadowOffset
+	implicitWidth: maxWidth + shadowOffset
 
 	mask: Region {
 		item: barContent
@@ -51,9 +56,7 @@ PanelWindow {
 
 	RectangularShadow {
 		anchors.fill: barContent
-
-		radius: barContent.radius
-
+		radius: barArea.hovered ? hoverRadius : normalRadius
 		blur: 5
 		spread: 0.2
 
@@ -74,15 +77,15 @@ PanelWindow {
 
 		anchors.horizontalCenter: parent.horizontalCenter
 
-		height: barMouseArea.containsMouse
+		height: barArea.hovered
 		? hoverHeight
 		: normalHeight
 
-		width: barMouseArea.containsMouse
+		width: barArea.hovered
 		? hoverWidth
 		: normalWidth
 
-		radius: barMouseArea.containsMouse
+		radius: barArea.hovered
 		? hoverRadius
 		: normalRadius
 
@@ -93,18 +96,20 @@ PanelWindow {
 		// ─────────────────────────────────────────
 
 		Clock {
-			visible: !barMouseArea.containsMouse
-
+			visible: !barArea.hovered
 			anchors.centerIn: parent
 		}
 
 		QuickPanel {
-			visible: barMouseArea.containsMouse
+			visible: barArea.hovered
 			anchors.fill: parent
-			Behavior on scale {
+
+			Behavior on visible {
 				NumberAnimation {
-					duration: 100
-					easing.type: Easing.OutCubic
+					duration: barArea.hovered ? 150 : 250
+					easing.type: barArea.hovered
+					? Easing.OutCubic
+					: Easing.InCubic
 				}
 			}
 		}
@@ -115,8 +120,8 @@ PanelWindow {
 
 		Behavior on width {
 			NumberAnimation {
-				duration: 100
-				easing.type: barMouseArea.containsMouse
+				duration: 250
+				easing.type: barArea.hovered
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
@@ -124,17 +129,10 @@ PanelWindow {
 
 		Behavior on height {
 			NumberAnimation {
-				duration: 100
-				easing.type: barMouseArea.containsMouse
+				duration: 250
+				easing.type: barArea.hovered
 				? Easing.OutCubic
 				: Easing.InCubic
-			}
-		}
-
-		Behavior on radius {
-			NumberAnimation {
-				duration: 250
-				easing.type: Easing.OutCubic
 			}
 		}
 
@@ -142,14 +140,8 @@ PanelWindow {
 		// Hover detection ONLY
 		// ─────────────────────────────────────────
 
-		MouseArea {
-			id: barMouseArea
-
-			anchors.fill: parent
-
-			hoverEnabled: true
-
-			acceptedButtons: Qt.NoButton
+		HoverHandler {
+			id: barArea
 		}
 	}
 }

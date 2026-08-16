@@ -81,7 +81,7 @@ Item {
 
 		anchors.fill: parent
 
-		radius: 22
+		radius: 16
 
 		color: {
 			if (!root.enabled)
@@ -91,35 +91,42 @@ Item {
 			)
 
 			if (root.checked) {
-				return tileHover.hovered
+				return tileArea.containsMouse
 				? root.activeHoverColor
 				: root.activeBackgroundColor
 			}
 
-			return tileHover.hovered
+			return tileArea.containsMouse
 			? root.inactiveHoverColor
 			: root.backgroundColor
 		}
-
-		scale: tileTap.pressed
-		? 0.97
-		: 1.0
 
 		// ─────────────────────────────────────────
 		// Animations
 		// ─────────────────────────────────────────
 
+		Behavior on scale {
+			NumberAnimation {
+				duration: 250
+				easing.type: barMouseArea.containsMouse
+				? Easing.OutCubic
+				: Easing.InCubic
+			}
+		}
+
 		Behavior on color {
 			ColorAnimation {
-				duration: 180
+				duration: 250
 				easing.type: Easing.OutCubic
 			}
 		}
 
-		Behavior on scale {
+		Behavior on height {
 			NumberAnimation {
-				duration: 120
-				easing.type: Easing.OutCubic
+				duration: 250
+				easing.type: barMouseArea.containsMouse
+				? Easing.OutCubic
+				: Easing.InCubic
 			}
 		}
 
@@ -133,7 +140,7 @@ Item {
 			width: 44
 			height: 44
 
-			radius: 22
+			radius: 50
 
 			anchors.left: parent.left
 			anchors.leftMargin: 10
@@ -251,26 +258,11 @@ Item {
 		// Hover
 		// ─────────────────────────────────────────
 
-		HoverHandler {
-			id: tileHover
-
-			enabled: root.enabled
-
-			acceptedDevices: PointerDevice.Mouse
-		}
-
-		// ─────────────────────────────────────────
-		// Click
-		// ─────────────────────────────────────────
-
-		TapHandler {
-			id: tileTap
-
-			enabled: root.enabled
-
-			acceptedDevices: PointerDevice.Mouse
-
-			onTapped: {
+		MouseArea {
+			id: tileArea
+			anchors.fill: parent
+			hoverEnabled: true
+			onClicked: {
 				root.toggled()
 			}
 		}
