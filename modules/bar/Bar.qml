@@ -55,16 +55,19 @@ PanelWindow {
 	// ─────────────────────────────────────────────
 
 	RectangularShadow {
-		anchors.fill: barContent
+		anchors.fill: tile
+
 		radius: barArea.hovered ? hoverRadius : normalRadius
-		blur: 5
-		spread: 0.2
+		blur: 8
+		spread: 0
 
-		offset: Qt.point(0, shadowOffset)
+		offset: Qt.point(0, 2)
 
-		color: Qt.darker(
-			backgroundColor,
-			0.5
+		color: Qt.rgba(
+			0,
+			0,
+			0,
+			0.25
 		)
 	}
 

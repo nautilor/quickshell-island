@@ -36,12 +36,12 @@ Item {
 
 	property color inactiveHoverColor: Qt.lighter(
 		backgroundColor,
-		1.12
+		1.50
 	)
 
 	property color activeHoverColor: Qt.lighter(
 		activeBackgroundColor,
-		1.08
+		1.12
 	)
 
 	// ─────────────────────────────────────────────
