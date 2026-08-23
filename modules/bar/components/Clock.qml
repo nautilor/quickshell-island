@@ -1,17 +1,21 @@
 import Quickshell
 import QtQuick
+import qs.modules.bar
 
 Item {
 	id: clock
 
-	readonly property string foregroundColor: "#FAEEF3"
+	Colors {
+		id: colors
+	}
+
 	property string time: Qt.formatDateTime(new Date(), "hh:mm")
 
 	Text {
 		id: clockText
 		anchors.centerIn: parent
 		text: clock.time
-		color: clock.foregroundColor
+		color: colors.windowForeground
 	}
 
 	Behavior {

@@ -1,6 +1,7 @@
 import Quickshell
 import QtQuick
 import QtQuick.Effects
+import qs.modules.bar
 import qs.modules.bar.components
 
 PanelWindow {
@@ -20,8 +21,9 @@ PanelWindow {
 	readonly property int normalRadius: 16
 	readonly property int hoverRadius: 24
 
-	readonly property string backgroundColor: "#111014"
-	readonly property string foregroundColor: "#FAEEF3"
+	Colors {
+		id: colors
+	}
 
 	readonly property int exclusiveZoneHeight: 45
 	readonly property int shadowOffset: 2
@@ -92,7 +94,7 @@ PanelWindow {
 		? hoverRadius
 		: normalRadius
 
-		color: backgroundColor
+		color: colors.windowBackground
 
 		// ─────────────────────────────────────────
 		// Content

@@ -1,9 +1,14 @@
 import Quickshell
 import QtQuick
 import QtQuick.Effects
+import qs.modules.bar
 
 Item {
 	id: root
+
+Colors {
+	id: colors
+}
 
 	// ─────────────────────────────────────────────
 	// State
@@ -28,11 +33,11 @@ Item {
 	// Colors
 	// ─────────────────────────────────────────────
 
-	property color backgroundColor: "#1A171E"
-	property color foregroundColor: "#F3E8EE"
+	property color backgroundColor: colors.quickToggleBackground
+	property color foregroundColor: colors.quickToggleForeground
 
-	property color activeBackgroundColor: "#D0BCFF"
-	property color activeForegroundColor: "#372E49"
+	property color activeBackgroundColor: colors.quickToggleActiveBackground
+	property color activeForegroundColor: colors.quickToggleActiveForeground
 
 	property color inactiveHoverColor: Qt.lighter(
 		backgroundColor,
