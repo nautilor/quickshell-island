@@ -1,6 +1,5 @@
 import Quickshell
 import QtQuick
-import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.modules.bar
 import qs.modules.bar.components.quickpanel
@@ -30,32 +29,16 @@ Timer {
 	}
 }
 
-function trayItemClick(item, point, alternate) {
-	if (!item)
-		return;
-
-	if (item.hasMenu) {
-		item.display(barWindow, point.x, point.y);
-		return;
-	}
-
-	if (alternate)
-		item.secondaryActivate();
-	else
-		item.activate();
-}
-
 Rectangle {
 	id: quickPanelBackground
 	anchors.fill: parent
-	anchors.margins: 10
+	anchors.margins: 15
 	color: colors.quickPanelBackground
 	radius: 24
 
 	Item {
 		id: content
 		anchors.fill: parent
-		anchors.margins: 10
 
 		Column {
 			anchors.fill: parent
@@ -83,33 +66,7 @@ Rectangle {
 						opacity: 0.85
 					}
 				}
-
-				Rectangle {
-					width: 28
-					height: 28
-					radius: 14
-					anchors.right: parent.right
-					color: closeButtonHoverHandler.hovered
-					? Qt.lighter(colors.quickToggleBackground, 1.10)
-					: colors.quickToggleBackground
-
-					Text {
-						anchors.centerIn: parent
-						text: "×"
-						font.pixelSize: 18
-						font.weight: Font.Medium
-						color: colors.quickToggleForeground
-					}
-
-					MouseArea {
-						anchors.fill: parent
-						onClicked: quickPanel.closeRequested()
-					}
-
-					HoverHandler {
-						id: closeButtonHoverHandler
-					}
-				}
+				Tray {}
 			}
 
 			Grid {
@@ -146,52 +103,6 @@ Rectangle {
 				Caffeine {
 					width: 180
 					height: 64
-				}
-			}
-
-			Item {
-				width: parent.width
-				height: 24
-
-				Row {
-					id: trayRow
-					anchors.right: parent.right
-					spacing: 8
-
-					Repeater {
-						model: quickPanel.trayItems
-
-						delegate: Item {
-							required property var modelData
-
-							implicitWidth: 24
-							implicitHeight: 24
-
-							Rectangle {
-								anchors.fill: parent
-								radius: width / 2
-								color: trayMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-							}
-
-							MouseArea {
-								id: trayMouse
-								anchors.fill: parent
-								acceptedButtons: Qt.LeftButton | Qt.RightButton
-								hoverEnabled: true
-								cursorShape: Qt.PointingHandCursor
-								onClicked: function(mouse) {
-									const point = mapToItem(content, 0, height);
-									quickPanel.trayItemClick(modelData, point, mouse.button === Qt.RightButton);
-								}
-							}
-
-							IconImage {
-								anchors.centerIn: parent
-								implicitSize: 18
-								source: modelData.icon
-							}
-						}
-					}
 				}
 			}
 		}

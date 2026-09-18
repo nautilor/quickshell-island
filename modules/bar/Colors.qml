@@ -11,4 +11,5 @@ QtObject {
 	readonly property color quickToggleForeground: "#B8C3E5"
 	readonly property color quickToggleActiveBackground: "#6689D0"
 	readonly property color quickToggleActiveForeground: "#D7DAE0"
+	readonly property color batteryLowBackground: "#E06C75"
 }

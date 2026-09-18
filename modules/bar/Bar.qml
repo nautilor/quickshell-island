@@ -14,7 +14,7 @@ PanelWindow {
 
 	readonly property int minHeight: 400
 
-	readonly property int hoverHeight: 290
+	readonly property int hoverHeight: 240
 	readonly property int hoverWidth: 590
 
 	readonly property int normalHeight: 45
