@@ -7,13 +7,15 @@ import qs.modules.bar.components
 PanelWindow {
 	id: bar
 
+	property bool quickPanelOpen: false
+
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
 
 	readonly property int minHeight: 400
 
 	readonly property int hoverHeight: 158
-	readonly property int hoverWidth: 580
+	readonly property int hoverWidth: 590
 
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
@@ -57,9 +59,9 @@ PanelWindow {
 	// ─────────────────────────────────────────────
 
 	RectangularShadow {
-		anchors.fill: tile
+		anchors.fill: barContent
 
-		radius: barArea.hovered ? hoverRadius : normalRadius
+		radius: bar.quickPanelOpen ? hoverRadius : normalRadius
 		blur: 8
 		spread: 0
 
@@ -82,37 +84,56 @@ PanelWindow {
 
 		anchors.horizontalCenter: parent.horizontalCenter
 
-		height: barArea.hovered
+		height: bar.quickPanelOpen
 		? hoverHeight
 		: normalHeight
 
-		width: barArea.hovered
+		width: bar.quickPanelOpen
 		? hoverWidth
 		: normalWidth
 
-		radius: barArea.hovered
+		radius: bar.quickPanelOpen
 		? hoverRadius
 		: normalRadius
 
 		color: colors.windowBackground
+
+		MouseArea {
+			anchors.fill: parent
+			onClicked: {
+				bar.quickPanelOpen = !bar.quickPanelOpen
+			}
+		}
 
 		// ─────────────────────────────────────────
 		// Content
 		// ─────────────────────────────────────────
 
 		Clock {
-			visible: !barArea.hovered
+			opacity: bar.quickPanelOpen ? 0 : 1
+			visible: !bar.quickPanelOpen || opacity > 0
 			anchors.centerIn: parent
+
+			Behavior on opacity {
+				NumberAnimation {
+					duration: bar.quickPanelOpen ? 150 : 250
+					easing.type: bar.quickPanelOpen
+					? Easing.OutCubic
+					: Easing.InCubic
+				}
+			}
 		}
 
 		QuickPanel {
-			visible: barArea.hovered
+			opacity: bar.quickPanelOpen ? 1 : 0
+			visible: bar.quickPanelOpen || opacity > 0
 			anchors.fill: parent
+			onCloseRequested: bar.quickPanelOpen = false
 
-			Behavior on visible {
+			Behavior on opacity {
 				NumberAnimation {
-					duration: barArea.hovered ? 150 : 250
-					easing.type: barArea.hovered
+					duration: bar.quickPanelOpen ? 150 : 250
+					easing.type: bar.quickPanelOpen
 					? Easing.OutCubic
 					: Easing.InCubic
 				}
@@ -126,7 +147,7 @@ PanelWindow {
 		Behavior on width {
 			NumberAnimation {
 				duration: 250
-				easing.type: barArea.hovered
+				easing.type: bar.quickPanelOpen
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
@@ -135,18 +156,10 @@ PanelWindow {
 		Behavior on height {
 			NumberAnimation {
 				duration: 250
-				easing.type: barArea.hovered
+				easing.type: bar.quickPanelOpen
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
-		}
-
-		// ─────────────────────────────────────────
-		// Hover detection ONLY
-		// ─────────────────────────────────────────
-
-		HoverHandler {
-			id: barArea
 		}
 	}
 }
