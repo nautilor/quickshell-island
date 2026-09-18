@@ -11,6 +11,9 @@ Item {
 
 	property string time: Qt.formatDateTime(new Date(), "hh:mm")
 
+	implicitWidth: clockText.implicitWidth
+	implicitHeight: clockText.implicitHeight
+
 	Text {
 		id: clockText
 		anchors.centerIn: parent

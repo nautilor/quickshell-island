@@ -9,6 +9,8 @@ PanelWindow {
 
 	property bool quickPanelOpen: false
 
+
+
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
 
@@ -29,6 +31,7 @@ PanelWindow {
 
 	readonly property int exclusiveZoneHeight: 45
 	readonly property int shadowOffset: 2
+
 
 	// ─────────────────────────────────────────────
 	// Window
@@ -109,18 +112,27 @@ PanelWindow {
 		// Content
 		// ─────────────────────────────────────────
 
-		Clock {
-			opacity: bar.quickPanelOpen ? 0 : 1
-			visible: !bar.quickPanelOpen || opacity > 0
+		Item {
 			anchors.centerIn: parent
+			width: clock.implicitWidth
+			height: clock.implicitHeight
+			visible: !bar.quickPanelOpen
 
-			Behavior on opacity {
-				NumberAnimation {
-					duration: bar.quickPanelOpen ? 150 : 250
-					easing.type: bar.quickPanelOpen
-					? Easing.OutCubic
-					: Easing.InCubic
-				}
+			WorkspaceIndicator {
+				anchors.right: clock.left
+				anchors.rightMargin: 60
+				anchors.verticalCenter: clock.verticalCenter
+			}
+
+			Clock {
+				id: clock
+				anchors.centerIn: parent
+			}
+
+			BatteryIndicator {
+				anchors.left: clock.right
+				anchors.leftMargin: 60
+				anchors.verticalCenter: clock.verticalCenter
 			}
 		}
 
