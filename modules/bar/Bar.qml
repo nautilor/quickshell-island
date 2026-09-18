@@ -14,7 +14,7 @@ PanelWindow {
 
 	readonly property int minHeight: 400
 
-	readonly property int hoverHeight: 158
+	readonly property int hoverHeight: 290
 	readonly property int hoverWidth: 590
 
 	readonly property int normalHeight: 45
@@ -125,6 +125,7 @@ PanelWindow {
 		}
 
 		QuickPanel {
+			barWindow: bar
 			opacity: bar.quickPanelOpen ? 1 : 0
 			visible: bar.quickPanelOpen || opacity > 0
 			anchors.fill: parent
