@@ -17,7 +17,7 @@ Item {
 	function focusedWorkspace() {
 		const workspaces = Hyprland.workspaces.values || [];
 		const focusedWorkspace = workspaces.find(workspace => workspace.focused);
-		return focusedWorkspace.name
+		return focusedWorkspace?.name
 	}
 
 	function iconForWorkspace() {

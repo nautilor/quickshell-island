@@ -10,10 +10,6 @@ Item {
 	property var barWindow: null
 	property string time: Qt.formatDateTime(new Date(), "h:mm")
 	property string date: Qt.formatDateTime(new Date(), "ddd, MMM d")
-	readonly property var trayItems: {
-		const items = SystemTray.items.values || [];
-		return items.filter(item => item && item.status !== Status.Passive);
-	}
 
 Colors {
 	id: colors
