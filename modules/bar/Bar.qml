@@ -22,7 +22,7 @@ PanelWindow {
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
 
-	readonly property int normalRadius: 16
+	readonly property int normalRadius: 50
 	readonly property int hoverRadius: 24
 
 	Colors {
@@ -42,7 +42,7 @@ PanelWindow {
 	}
 
 	margins {
-		top: 5
+		top: 10
 	}
 
 	exclusionMode: ExclusionMode.Normal
