@@ -1,29 +1,37 @@
 import Quickshell
 import QtQuick
 import QtQuick.Effects
+import Quickshell.Io
+import Quickshell.Wayland
 import qs.modules.bar
 import qs.modules.bar.components
+import qs.modules.launcher
 
 PanelWindow {
 	id: bar
+	focusable: false
+	WlrLayershell.keyboardFocus: bar.launcherPanelOpen
 
 	property bool quickPanelOpen: false
-
-
+	property bool launcherPanelOpen: false
+	property bool somethingOpen: quickPanelOpen || launcherPanelOpen
 
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
 
 	readonly property int minHeight: 400
 
-	readonly property int hoverHeight: 240
-	readonly property int hoverWidth: 590
+	readonly property int quickPanelHeight: 240
+	readonly property int quickPanelWidth: 590
+
+	readonly property int launcherPanelHeight: 285
+	readonly property int launcherPanelWidth: 590
 
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
 
 	readonly property int normalRadius: 50
-	readonly property int hoverRadius: 24
+	readonly property int openRadius: 24
 
 	Colors {
 		id: colors
@@ -31,6 +39,27 @@ PanelWindow {
 
 	readonly property int exclusiveZoneHeight: 45
 	readonly property int shadowOffset: 2
+
+
+	function panelHeight() {
+		if (bar.quickPanelOpen) {
+			return bar.quickPanelHeight
+		} else if (bar.launcherPanelOpen) {
+			return bar.launcherPanelHeight
+		} else {
+			return bar.normalHeight
+		}
+	}
+
+	function panelWidth() {
+		if (bar.quickPanelOpen) {
+			return bar.quickPanelWidth
+		} else if (bar.launcherPanelOpen) {
+			return bar.launcherPanelWidth
+		} else {
+			return bar.normalWidth
+		}
+	}
 
 
 	// ─────────────────────────────────────────────
@@ -64,7 +93,7 @@ PanelWindow {
 	RectangularShadow {
 		anchors.fill: barContent
 
-		radius: bar.quickPanelOpen ? hoverRadius : normalRadius
+		radius: bar.quickPanelOpen ? openRadius : normalRadius
 		blur: 8
 		spread: 0
 
@@ -87,16 +116,12 @@ PanelWindow {
 
 		anchors.horizontalCenter: parent.horizontalCenter
 
-		height: bar.quickPanelOpen
-		? hoverHeight
-		: normalHeight
+		height: bar.panelHeight()
+		width: bar.panelWidth()
 
-		width: bar.quickPanelOpen
-		? hoverWidth
-		: normalWidth
 
-		radius: bar.quickPanelOpen
-		? hoverRadius
+		radius: bar.somethingOpen
+		? openRadius
 		: normalRadius
 
 		color: colors.windowBackground
@@ -104,7 +129,12 @@ PanelWindow {
 		MouseArea {
 			anchors.fill: parent
 			onClicked: {
-				bar.quickPanelOpen = !bar.quickPanelOpen
+				if (bar.launcherPanelOpen) {
+					bar.launcherPanelOpen = false
+					bar.focusable = false
+				} else {
+					bar.quickPanelOpen = !bar.quickPanelOpen
+				}
 			}
 		}
 
@@ -116,7 +146,7 @@ PanelWindow {
 			anchors.centerIn: parent
 			width: clock.implicitWidth
 			height: clock.implicitHeight
-			visible: !bar.quickPanelOpen
+			visible: !bar.somethingOpen
 
 			WorkspaceIndicator {
 				anchors.right: clock.left
@@ -136,12 +166,34 @@ PanelWindow {
 			}
 		}
 
+		Launcher {
+			id: launcherPanel
+			barWindow: bar
+			opacity: bar.launcherPanelOpen ? 1 : 0
+			visible: bar.launcherPanelOpen || opacity > 0
+			anchors.fill: parent
+			onCloseRequested: {
+				bar.launcherPanelOpen = false
+				bar.focusable = false
+			}
+
+			Behavior on opacity {
+				NumberAnimation {
+					duration: bar.launcherPanelOpen ? 150 : 250
+					easing.type: bar.launcherPanelOpen
+					? Easing.OutCubic
+					: Easing.InCubic
+				}
+			}
+		}
+
 		QuickPanel {
+			id: quickPanel
 			barWindow: bar
 			opacity: bar.quickPanelOpen ? 1 : 0
 			visible: bar.quickPanelOpen || opacity > 0
 			anchors.fill: parent
-			onCloseRequested: bar.quickPanelOpen = false
+			onCloseRequested: bar.closeQuickPanel()
 
 			Behavior on opacity {
 				NumberAnimation {
@@ -173,6 +225,14 @@ PanelWindow {
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
+		}
+	}
+
+	IpcHandler {
+		target: "launcher"
+		function toggle() {
+			bar.focusable = !bar.launcherPanelOpen
+				bar.launcherPanelOpen = !bar.launcherPanelOpen
 		}
 	}
 }

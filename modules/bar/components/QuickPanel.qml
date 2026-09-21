@@ -1,15 +1,16 @@
 import Quickshell
 import QtQuick
 import Quickshell.Widgets
+import QtQuick.Effects
 import qs.modules.bar
 import qs.modules.bar.components.quickpanel
 
 Item {
 	id: quickPanel
 	signal closeRequested()
-	property var barWindow: null
 	property string time: Qt.formatDateTime(new Date(), "h:mm")
 	property string date: Qt.formatDateTime(new Date(), "ddd, MMM d")
+	property var barWindow: null
 
 Colors {
 	id: colors
@@ -23,6 +24,15 @@ Timer {
 		quickPanel.time = Qt.formatDateTime(new Date(), "h:mm")
 		quickPanel.date = Qt.formatDateTime(new Date(), "ddd, MMM d")
 	}
+}
+
+RectangularShadow {
+	anchors.fill: parent
+	radius: 20
+	blur: 8
+	spread: 0
+	offset: Qt.point(0, 2)
+	color: Qt.rgba(0, 0, 0, 0.25)
 }
 
 Rectangle {
