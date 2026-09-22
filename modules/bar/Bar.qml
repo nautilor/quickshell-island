@@ -14,7 +14,7 @@ PanelWindow {
 
 	property bool quickPanelOpen: false
 	property bool launcherPanelOpen: false
-	property bool somethingOpen: quickPanelOpen || launcherPanelOpen
+	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || notificationPanel.opacity > 0
 
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
@@ -42,7 +42,9 @@ PanelWindow {
 
 
 	function panelHeight() {
-		if (bar.quickPanelOpen) {
+		if (notificationPanel.opacity > 0) {
+			return notificationPanel.implicitHeight
+		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelHeight
 		} else if (bar.launcherPanelOpen) {
 			return bar.launcherPanelHeight
@@ -52,7 +54,9 @@ PanelWindow {
 	}
 
 	function panelWidth() {
-		if (bar.quickPanelOpen) {
+		if (notificationPanel.opacity > 0) {
+			return notificationPanel.implicitWidth
+		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelWidth
 		} else if (bar.launcherPanelOpen) {
 			return bar.launcherPanelWidth
@@ -93,7 +97,7 @@ PanelWindow {
 	RectangularShadow {
 		anchors.fill: barContent
 
-		radius: bar.quickPanelOpen ? openRadius : normalRadius
+		radius: bar.somethingOpen ? openRadius : normalRadius
 		blur: 8
 		spread: 0
 
@@ -205,6 +209,23 @@ PanelWindow {
 			}
 		}
 
+		Notifications {
+			id: notificationPanel
+			barWindow: bar
+			opacity: notificationPanel.active ? 1 : 0
+			visible: notificationPanel.active || opacity > 0
+			anchors.fill: parent
+
+			Behavior on opacity {
+				NumberAnimation {
+					duration: notificationPanel.active ? 150 : 250
+					easing.type: notificationPanel.active
+					? Easing.OutCubic
+					: Easing.InCubic
+				}
+			}
+		}
+
 		// ─────────────────────────────────────────
 		// Animations
 		// ─────────────────────────────────────────
@@ -212,7 +233,7 @@ PanelWindow {
 		Behavior on width {
 			NumberAnimation {
 				duration: 250
-				easing.type: bar.quickPanelOpen
+				easing.type: bar.somethingOpen
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
@@ -221,7 +242,7 @@ PanelWindow {
 		Behavior on height {
 			NumberAnimation {
 				duration: 250
-				easing.type: bar.quickPanelOpen
+				easing.type: bar.somethingOpen
 				? Easing.OutCubic
 				: Easing.InCubic
 			}
