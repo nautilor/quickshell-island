@@ -1,6 +1,6 @@
 import Quickshell
 import QtQuick
-import qs.modules.bar
+import qs.modules.colors
 
 Item {
 	id: clock

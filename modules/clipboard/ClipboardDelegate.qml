@@ -67,12 +67,12 @@ Item {
 					cache: false
 				}
 
-				IconImage {
+				Text {
 					anchors.centerIn: parent
-					width: 24
-					height: 24
+					text: "󰭷"
+					color: clipboard ? clipboard.textMuted : "#B0B0B0"
+					font.pixelSize: 20
 					visible: modelData.imagePath === ""
-					source: Quickshell.iconPath("edit-copy", true)
 				}
 			}
 

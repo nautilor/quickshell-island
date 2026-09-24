@@ -5,7 +5,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
-import qs.modules.bar
+import qs.modules.colors
 
 Item {
 	id: root

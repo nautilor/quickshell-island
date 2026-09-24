@@ -2,7 +2,7 @@ import Quickshell
 import QtQuick
 import Quickshell.Services.UPower
 import qs.modules.bar.components
-import qs.modules.bar
+import qs.modules.colors
 
 Item {
 	id: root

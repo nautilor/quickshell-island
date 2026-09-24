@@ -4,9 +4,12 @@ import QtQuick.Effects
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.modules.bar
-import qs.modules.bar.components
+import qs.modules.quickpanel
 import qs.modules.clipboard
 import qs.modules.launcher
+import qs.modules.notifications
+import qs.modules.bar.components
+import qs.modules.colors
 
 PanelWindow {
 	id: bar

@@ -2,8 +2,7 @@ import Quickshell
 import QtQuick
 import Quickshell.Widgets
 import QtQuick.Effects
-import qs.modules.bar
-import qs.modules.bar.components.quickpanel
+import qs.modules.colors
 
 Item {
 	id: quickPanel

@@ -4,7 +4,7 @@ import QtQuick.Effects
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
-import qs.modules.bar
+import qs.modules.colors
 
 Item {
 	id: notificationPanel
