@@ -5,16 +5,18 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.modules.bar
 import qs.modules.bar.components
+import qs.modules.clipboard
 import qs.modules.launcher
 
 PanelWindow {
 	id: bar
 	focusable: false
-	WlrLayershell.keyboardFocus: bar.launcherPanelOpen
+	WlrLayershell.keyboardFocus: bar.launcherPanelOpen || bar.clipboardPanelOpen
 
 	property bool quickPanelOpen: false
 	property bool launcherPanelOpen: false
-	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || notificationPanel.opacity > 0
+	property bool clipboardPanelOpen: false
+	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0
 
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
@@ -26,6 +28,9 @@ PanelWindow {
 
 	readonly property int launcherPanelHeight: 285
 	readonly property int launcherPanelWidth: 590
+
+	readonly property int clipboardPanelHeight: 460
+	readonly property int clipboardPanelWidth: 590
 
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
@@ -44,6 +49,8 @@ PanelWindow {
 	function panelHeight() {
 		if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitHeight
+		} else if (bar.clipboardPanelOpen) {
+			return bar.clipboardPanelHeight
 		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelHeight
 		} else if (bar.launcherPanelOpen) {
@@ -56,6 +63,8 @@ PanelWindow {
 	function panelWidth() {
 		if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitWidth
+		} else if (bar.clipboardPanelOpen) {
+			return bar.clipboardPanelWidth
 		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelWidth
 		} else if (bar.launcherPanelOpen) {
@@ -64,6 +73,7 @@ PanelWindow {
 			return bar.normalWidth
 		}
 	}
+
 
 
 	// ─────────────────────────────────────────────
@@ -136,6 +146,9 @@ PanelWindow {
 				if (bar.launcherPanelOpen) {
 					bar.launcherPanelOpen = false
 					bar.focusable = false
+				} else if (bar.clipboardPanelOpen) {
+					bar.clipboardPanelOpen = false
+					bar.focusable = false
 				} else {
 					bar.quickPanelOpen = !bar.quickPanelOpen
 				}
@@ -169,6 +182,27 @@ PanelWindow {
 				anchors.verticalCenter: clock.verticalCenter
 			}
 		}
+
+	Clipboard {
+		id: clipboardPanel
+		barWindow: bar
+		opacity: bar.clipboardPanelOpen ? 1 : 0
+		visible: bar.clipboardPanelOpen || opacity > 0
+		anchors.fill: parent
+		onCloseRequested: {
+			bar.clipboardPanelOpen = false
+			bar.focusable = false
+		}
+
+		Behavior on opacity {
+			NumberAnimation {
+				duration: bar.clipboardPanelOpen ? 150 : 250
+				easing.type: bar.clipboardPanelOpen
+				? Easing.OutCubic
+				: Easing.InCubic
+			}
+		}
+	}
 
 		Launcher {
 			id: launcherPanel
@@ -254,6 +288,14 @@ PanelWindow {
 		function toggle() {
 			bar.focusable = !bar.launcherPanelOpen
 				bar.launcherPanelOpen = !bar.launcherPanelOpen
+		}
+	}
+
+	IpcHandler {
+		target: "clipboard"
+		function toggle() {
+			bar.focusable = !bar.clipboardPanelOpen
+			bar.clipboardPanelOpen = !bar.clipboardPanelOpen
 		}
 	}
 }
