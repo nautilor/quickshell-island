@@ -3,13 +3,14 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell.Io
 import Quickshell.Wayland
-import qs.modules.bar
-import qs.modules.quickpanel
+import Quickshell.Widgets
 import qs.modules.clipboard
+import qs.modules.colors
 import qs.modules.launcher
 import qs.modules.notifications
+import qs.modules.osd as OSD
+import qs.modules.quickpanel
 import qs.modules.bar.components
-import qs.modules.colors
 
 PanelWindow {
 	id: bar
@@ -19,7 +20,8 @@ PanelWindow {
 	property bool quickPanelOpen: false
 	property bool launcherPanelOpen: false
 	property bool clipboardPanelOpen: false
-	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0
+	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0 || volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
+	property bool osdOpen: volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
 
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
@@ -40,6 +42,7 @@ PanelWindow {
 
 	readonly property int normalRadius: 50
 	readonly property int openRadius: 24
+	readonly property int osdRadius: 100
 
 	Colors {
 		id: colors
@@ -48,9 +51,23 @@ PanelWindow {
 	readonly property int exclusiveZoneHeight: 45
 	readonly property int shadowOffset: 2
 
+	function activeOsd() {
+		if (volumeOsd.opacity > 0)
+			return volumeOsd
+		if (brightnessOsd.opacity > 0)
+			return brightnessOsd
+		if (caffeineOsd.opacity > 0)
+			return caffeineOsd
+		if (microphoneOsd.opacity > 0)
+			return microphoneOsd
+		return null
+	}
 
 	function panelHeight() {
-		if (notificationPanel.opacity > 0) {
+		const osd = activeOsd()
+		if (osd) {
+			return osd.implicitHeight
+		} else if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitHeight
 		} else if (bar.clipboardPanelOpen) {
 			return bar.clipboardPanelHeight
@@ -64,7 +81,10 @@ PanelWindow {
 	}
 
 	function panelWidth() {
-		if (notificationPanel.opacity > 0) {
+		const osd = activeOsd()
+		if (osd) {
+			return osd.implicitWidth
+		} else if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitWidth
 		} else if (bar.clipboardPanelOpen) {
 			return bar.clipboardPanelWidth
@@ -77,11 +97,10 @@ PanelWindow {
 		}
 	}
 
-
-
-	// ─────────────────────────────────────────────
-	// Window
-	// ─────────────────────────────────────────────
+	function closeQuickPanel() {
+		bar.quickPanelOpen = false
+		bar.focusable = false
+	}
 
 	anchors {
 		top: true
@@ -92,7 +111,7 @@ PanelWindow {
 	}
 
 	exclusionMode: ExclusionMode.Normal
-	exclusiveZone: exclusiveZoneHeight
+	exclusiveZone: bar.exclusiveZoneHeight
 
 	implicitHeight: maxHeight + shadowOffset
 	implicitWidth: maxWidth + shadowOffset
@@ -103,48 +122,27 @@ PanelWindow {
 
 	color: "transparent"
 
-	// ─────────────────────────────────────────────
-	// Shadow
-	// ─────────────────────────────────────────────
-
 	RectangularShadow {
 		anchors.fill: barContent
-
 		radius: bar.somethingOpen ? openRadius : normalRadius
 		blur: 8
 		spread: 0
-
 		offset: Qt.point(0, 2)
-
-		color: Qt.rgba(
-			0,
-			0,
-			0,
-			0.25
-		)
+		color: Qt.rgba(0, 0, 0, 0.25)
 	}
-
-	// ─────────────────────────────────────────────
-	// Bar
-	// ─────────────────────────────────────────────
 
 	Rectangle {
 		id: barContent
 
 		anchors.horizontalCenter: parent.horizontalCenter
-
 		height: bar.panelHeight()
 		width: bar.panelWidth()
-
-
-		radius: bar.somethingOpen
-		? openRadius
-		: normalRadius
-
+		radius: bar.somethingOpen ? (osdOpen ? osdRadius : openRadius) : normalRadius
 		color: colors.windowBackground
 
 		MouseArea {
 			anchors.fill: parent
+			enabled: volumeOsd.opacity === 0 && brightnessOsd.opacity === 0 && caffeineOsd.opacity === 0 && microphoneOsd.opacity === 0
 			onClicked: {
 				if (bar.launcherPanelOpen) {
 					bar.launcherPanelOpen = false
@@ -157,10 +155,6 @@ PanelWindow {
 				}
 			}
 		}
-
-		// ─────────────────────────────────────────
-		// Content
-		// ─────────────────────────────────────────
 
 		Item {
 			anchors.centerIn: parent
@@ -186,26 +180,26 @@ PanelWindow {
 			}
 		}
 
-	Clipboard {
-		id: clipboardPanel
-		barWindow: bar
-		opacity: bar.clipboardPanelOpen ? 1 : 0
-		visible: bar.clipboardPanelOpen || opacity > 0
-		anchors.fill: parent
-		onCloseRequested: {
-			bar.clipboardPanelOpen = false
-			bar.focusable = false
-		}
+		Clipboard {
+			id: clipboardPanel
+			barWindow: bar
+			opacity: bar.clipboardPanelOpen ? 1 : 0
+			visible: bar.clipboardPanelOpen || opacity > 0
+			anchors.fill: parent
+			onCloseRequested: {
+				bar.clipboardPanelOpen = false
+				bar.focusable = false
+			}
 
-		Behavior on opacity {
-			NumberAnimation {
-				duration: bar.clipboardPanelOpen ? 150 : 250
-				easing.type: bar.clipboardPanelOpen
-				? Easing.OutCubic
-				: Easing.InCubic
+			Behavior on opacity {
+				NumberAnimation {
+					duration: bar.clipboardPanelOpen ? 150 : 250
+					easing.type: bar.clipboardPanelOpen
+					? Easing.OutCubic
+					: Easing.InCubic
+				}
 			}
 		}
-	}
 
 		Launcher {
 			id: launcherPanel
@@ -263,9 +257,25 @@ PanelWindow {
 			}
 		}
 
-		// ─────────────────────────────────────────
-		// Animations
-		// ─────────────────────────────────────────
+		OSD.Volume {
+			id: volumeOsd
+			anchors.fill: parent
+		}
+
+		OSD.Brightness {
+			id: brightnessOsd
+			anchors.fill: parent
+		}
+
+		OSD.Caffeine {
+			id: caffeineOsd
+			anchors.fill: parent
+		}
+
+		OSD.Micprone {
+			id: microphoneOsd
+			anchors.fill: parent
+		}
 
 		Behavior on width {
 			NumberAnimation {
@@ -290,7 +300,7 @@ PanelWindow {
 		target: "launcher"
 		function toggle() {
 			bar.focusable = !bar.launcherPanelOpen
-				bar.launcherPanelOpen = !bar.launcherPanelOpen
+			bar.launcherPanelOpen = !bar.launcherPanelOpen
 		}
 	}
 
@@ -299,6 +309,30 @@ PanelWindow {
 		function toggle() {
 			bar.focusable = !bar.clipboardPanelOpen
 			bar.clipboardPanelOpen = !bar.clipboardPanelOpen
+		}
+	}
+
+	IpcHandler {
+		target: "osd"
+
+		function volume() {
+			volumeOsd.showVolume()
+		}
+
+		function brightness() {
+			brightnessOsd.refreshBrightness()
+		}
+
+		function caffeine() {
+			caffeineOsd.showCaffeine()
+		}
+
+		function microphone() {
+			microphoneOsd.showMicrophone()
+		}
+
+		function mic() {
+			microphone()
 		}
 	}
 }
