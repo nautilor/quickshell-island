@@ -25,20 +25,11 @@ Timer {
 	}
 }
 
-RectangularShadow {
-	anchors.fill: parent
-	radius: 20
-	blur: 8
-	spread: 0
-	offset: Qt.point(0, 2)
-	color: Qt.rgba(0, 0, 0, 0.25)
-}
-
 Rectangle {
 	id: quickPanelBackground
 	anchors.fill: parent
 	anchors.margins: 15
-	color: colors.quickPanelBackground
+	color: colors.background
 	radius: 24
 
 	Item {

@@ -40,15 +40,6 @@ Item {
 
 	anchors.fill: parent
 
-	RectangularShadow {
-		anchors.fill: panel
-		radius: 24
-		blur: 8
-		spread: 0
-		offset: Qt.point(0, 2)
-		color: Qt.rgba(0, 0, 0, 0.25)
-	}
-
 	Rectangle {
 		id: panel
 		anchors.fill: parent

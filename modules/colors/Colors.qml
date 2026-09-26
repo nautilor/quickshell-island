@@ -2,45 +2,52 @@ import Quickshell
 import QtQuick
 
 QtObject {
-	readonly property color background: "#0B1020"
-	readonly property color surface: "#12192B"
-	readonly property color surfaceContainerLow: "#172036"
-	readonly property color surfaceContainer: "#1D2942"
-	readonly property color surfaceContainerHigh: "#25344F"
-	readonly property color surfaceContainerHighest: "#2D3E5E"
-	readonly property color surfaceVariant: "#344766"
+	readonly property color background: "#080A0D"
+	readonly property color surface: "#0B0D10"
+	readonly property color surfaceContainerLow: "#101318"
+	readonly property color surfaceContainer: "#15191F"
+	readonly property color surfaceContainerHigh: "#1B2027"
+	readonly property color surfaceContainerHighest: "#222830"
+	readonly property color surfaceVariant: "#29313A"
 
-	readonly property color primary: "#8FB4FF"
-	readonly property color primaryForeground: "#0C1A33"
-	readonly property color primaryContainer: "#23416F"
-	readonly property color primaryContainerForeground: "#DCE8FF"
+	// One Dark Pro blue
+	readonly property color primary: "#61AFEF"
+	readonly property color primaryForeground: "#071018"
+	readonly property color primaryContainer: "#18344A"
+	readonly property color primaryContainerForeground: "#B9DEFF"
 
-	readonly property color secondary: "#B5C8F7"
-	readonly property color secondaryForeground: "#11233C"
-	readonly property color secondaryContainer: "#22314B"
-	readonly property color secondaryContainerForeground: "#DEE8FF"
+	// One Dark Pro cyan/blue
+	readonly property color secondary: "#56B6C2"
+	readonly property color secondaryForeground: "#071113"
+	readonly property color secondaryContainer: "#16363B"
+	readonly property color secondaryContainerForeground: "#B9F0F5"
 
-	readonly property color tertiary: "#D3B7FF"
-	readonly property color tertiaryForeground: "#29144D"
-	readonly property color tertiaryContainer: "#413061"
-	readonly property color tertiaryContainerForeground: "#F0E4FF"
+	// One Dark Pro purple
+	readonly property color tertiary: "#C678DD"
+	readonly property color tertiaryForeground: "#170B1B"
+	readonly property color tertiaryContainer: "#382043"
+	readonly property color tertiaryContainerForeground: "#F0C9FA"
 
-	readonly property color surfaceForeground: "#E8EEFF"
-	readonly property color surfaceVariantForeground: "#B6C1DD"
-	readonly property color outline: "#667594"
-	readonly property color outlineVariant: "#41506D"
+	// Text
+	readonly property color surfaceForeground: "#ABB2BF"
+	readonly property color surfaceVariantForeground: "#7F8793"
+	readonly property color outline: "#4B5360"
+	readonly property color outlineVariant: "#303741"
 
-	readonly property color error: "#FFB4AB"
-	readonly property color errorContainer: "#693C3D"
-	readonly property color errorContainerForeground: "#FFDAD6"
+	// One Dark Pro red
+	readonly property color error: "#E06C75"
+	readonly property color errorContainer: "#4A2025"
+	readonly property color errorContainerForeground: "#FFB7BD"
 
-	readonly property color warning: "#EFCB72"
-	readonly property color warningContainer: "#52431B"
-	readonly property color warningContainerForeground: "#FFF0C2"
+	// One Dark Pro yellow
+	readonly property color warning: "#E5C07B"
+	readonly property color warningContainer: "#40351D"
+	readonly property color warningContainerForeground: "#F8DFA8"
 
-	readonly property color success: "#8FD7A7"
-	readonly property color successContainer: "#1F4C36"
-	readonly property color successContainerForeground: "#D9FFE4"
+	// One Dark Pro green
+	readonly property color success: "#98C379"
+	readonly property color successContainer: "#263A20"
+	readonly property color successContainerForeground: "#C8E9B3"
 
 	readonly property int radiusNone: 0
 	readonly property int radiusExtraSmall: 4
@@ -89,9 +96,10 @@ QtObject {
 	readonly property color accentColor: primary
 	readonly property color critical: error
 
-	readonly property color quickPanelBackground: background
-	readonly property color quickToggleBackground: surfaceContainer
-	readonly property color quickToggleForeground: surfaceForeground
-	readonly property color quickToggleActiveBackground: primaryContainer
-	readonly property color quickToggleActiveForeground: primaryContainerForeground
+readonly property color quickPanelBackground: background
+readonly property color quickToggleBackground: surfaceContainer
+readonly property color quickToggleForeground: surfaceForeground
+readonly property color quickToggleActiveBackground: primary
+readonly property color quickToggleActiveForeground: primaryForeground
 }
+

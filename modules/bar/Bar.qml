@@ -138,7 +138,7 @@ PanelWindow {
 		height: bar.panelHeight()
 		width: bar.panelWidth()
 		radius: bar.somethingOpen ? (osdOpen ? osdRadius : openRadius) : normalRadius
-		color: colors.windowBackground
+		color: colors.background
 
 		MouseArea {
 			anchors.fill: parent
