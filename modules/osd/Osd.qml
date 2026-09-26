@@ -28,8 +28,8 @@ Item {
 	readonly property color textMuted: colors.foregroundMuted
 
 	readonly property bool messageMode: mode === "message"
-	readonly property int osdWidth: 340
-	readonly property int osdHeight: 72
+	readonly property int osdWidth: 360
+	readonly property int osdHeight: 45
 	readonly property int messageMaxWidth: 440
 	readonly property int messageMinWidth: 240
 	readonly property int messageIconSize: 30
@@ -89,72 +89,50 @@ Item {
 
 			RowLayout {
 				anchors.fill: parent
-				anchors.leftMargin: 16
-				anchors.rightMargin: 16
-				spacing: 12
-
-				Item {
-					implicitWidth: 40
-					implicitHeight: 40
-
-					Rectangle {
-						anchors.fill: parent
-						radius: width / 2
-						color: Qt.alpha(root.accentBackgroundColor, 0.8)
-						border.width: 1
-						border.color: Qt.alpha(root.accentBackgroundColor, 0.28)
-					}
-
-					Text {
-						anchors.fill: parent
-						visible: root.iconGlyph !== ""
-						text: root.iconGlyph
-						color: root.accentForegroundColor
-						font.pixelSize: 26
-						font.weight: Font.DemiBold
-						font.family: "JetBrainsMono Nerd Font Propo"
-						horizontalAlignment: Text.AlignHCenter
-						verticalAlignment: Text.AlignVCenter
-					}
-
-					IconImage {
-						anchors.fill: parent
-						visible: root.iconGlyph === ""
-						implicitSize: 26
-						source: Quickshell.iconPath(root.iconName)
-					}
-				}
+				anchors.leftMargin: colors.spacing8
+				anchors.rightMargin: colors.spacing8
+				anchors.topMargin: colors.spacing4
+				anchors.bottomMargin: colors.spacing4
+				spacing: colors.spacing8
 
 				Rectangle {
 					Layout.fillWidth: true
-					implicitHeight: 10
-					radius: 20
-					color: Qt.alpha(colors.quickToggleBackground, 0.8)
+					Layout.preferredHeight: 32
+					radius: colors.radiusFull
+					color: Qt.alpha(colors.surfaceVariant, 0.58)
 
 					Rectangle {
-						anchors {
-							left: parent.left
-							top: parent.top
-							bottom: parent.bottom
-						}
+						id: levelPill
+						anchors.left: parent.left
+						anchors.top: parent.top
+						anchors.bottom: parent.bottom
 						width: parent.width * Math.max(0, Math.min(1, root.level))
-						radius: parent.radius
-						color: root.accentBackgroundColor
+						radius: width / 2
+						color: "#BDC4D6"
 					}
 				}
 
 				Rectangle {
-					implicitWidth: percentMetrics.width + 18
-					implicitHeight: 28
-					radius: height / 2
-					color: colors.quickToggleBackground
+					Layout.preferredWidth: 32
+					Layout.preferredHeight: 32
+					radius: colors.radiusFull
+					color: "#DCE1EE"
 
 					Text {
 						anchors.centerIn: parent
-						text: `${Math.max(0, Math.min(100, root.percent))}%`
-						color: colors.windowForeground
-						font.pixelSize: 13
+						visible: root.iconGlyph !== ""
+						text: root.iconGlyph
+						color: colors.background
+						font.pixelSize: colors.titleMedium
 						font.weight: Font.DemiBold
+						font.family: "JetBrainsMono Nerd Font Propo"
+					}
+
+					IconImage {
+						anchors.centerIn: parent
+						visible: root.iconGlyph === ""
+						implicitSize: 18
+						source: Quickshell.iconPath(root.iconName)
 					}
 				}
 			}
