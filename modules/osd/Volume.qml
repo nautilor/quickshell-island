@@ -96,5 +96,6 @@ Item {
 		iconGlyph: root.iconGlyph
 		level: root.muted ? 0 : root.level
 		percent: root.percent
+		accentBackgroundColor: root.muted ? colors.error : colors.primary
 	}
 }

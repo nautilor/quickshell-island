@@ -15,8 +15,8 @@ Item {
 	property real level: 0
 	property int percent: 0
 
-	property color accentBackgroundColor: colors.quickToggleActiveBackground
-	property color accentForegroundColor: colors.quickToggleActiveForeground
+	property color accentBackgroundColor: colors.primary
+	property color accentForegroundColor: colors.primaryForeground
 
 	Colors {
 		id: colors
@@ -108,7 +108,7 @@ Item {
 						anchors.bottom: parent.bottom
 						width: parent.width * Math.max(0, Math.min(1, root.level))
 						radius: width / 2
-						color: "#BDC4D6"
+						color: root.accentBackgroundColor
 					}
 				}
 
@@ -116,7 +116,7 @@ Item {
 					Layout.preferredWidth: 32
 					Layout.preferredHeight: 32
 					radius: colors.radiusFull
-					color: "#DCE1EE"
+					color: root.accentBackgroundColor
 
 					Text {
 						anchors.centerIn: parent
