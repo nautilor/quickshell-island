@@ -56,7 +56,15 @@ Item {
 		return "audio-volume-high-symbolic"
 	}
 
-	readonly property string iconGlyph: "󰕾"
+	readonly property string iconGlyph: {
+		if (!available || muted || percent <= 0)
+			return "󰖁"
+		if (percent < 34)
+			return "󰕿"
+		if (percent < 67)
+			return "󰖀"
+		return "󰕾"
+	}
 
 	PwObjectTracker {
 		objects: [Pipewire.defaultAudioSink]

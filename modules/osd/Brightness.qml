@@ -40,8 +40,25 @@ Item {
 			brightnessPokeReader.running = true
 	}
 
-	readonly property string iconName: "display-brightness-symbolic"
-	readonly property string iconGlyph: "󰃟"
+	readonly property string iconName: {
+		if (percent <= 0)
+			return "display-brightness-off-symbolic"
+		if (percent < 34)
+			return "display-brightness-low-symbolic"
+		if (percent < 67)
+			return "display-brightness-medium-symbolic"
+		return "display-brightness-high-symbolic"
+	}
+
+	readonly property string iconGlyph: {
+		if (percent <= 0)
+			return "󰃞"
+		if (percent < 34)
+			return "󰃞"
+		if (percent < 67)
+			return "󰃟"
+		return "󰃠"
+	}
 
 	Process {
 		id: brightnessReader
