@@ -58,5 +58,6 @@ Item {
 		iconGlyph: root.iconGlyph
 		title: "Microphone"
 		subtitle: root.state === "muted" ? "Muted" : "On"
+		accentBackgroundColor: root.state === "muted" ? colors.error : colors.primary
 	}
 }

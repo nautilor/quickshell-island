@@ -27,7 +27,7 @@ Item {
 	}
 
 	readonly property string iconName: root.state === "active" ? "caffeine" : "caffeine-off"
-	readonly property string iconGlyph: "󰅶"
+	readonly property string iconGlyph: root.state === "active"? "󰅶" : "󰾪"
 
 	Process {
 		id: stateReader
@@ -58,5 +58,6 @@ Item {
 		iconGlyph: root.iconGlyph
 		title: "Caffeine"
 		subtitle: root.state === "active" ? "On" : "Off"
+		accentBackgroundColor: root.state === "active" ? colors.primary : colors.error
 	}
 }
