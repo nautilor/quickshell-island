@@ -108,3 +108,29 @@ A few screenshots demonstrating the UI components shipped with Quickshell. Open 
 
 If any image does not display in your viewer, open the file directly from the `assets/` folder.
 
+## Usage with NixOS / Home Manager
+
+Add this repository as a flake input in your configuration:
+
+```nix
+{
+  inputs.quickshell.url = "github:nautilor/quickshell-island";
+
+  # ...
+}
+```
+
+Then import the flake as a Home Manager module and enable it:
+
+```nix
+{
+  imports = [
+    inputs.quickshell
+  ];
+
+  programs.quickshell.enable = true;
+}
+```
+
+Enabling the module will make the repository's `bin/`, `modules/`, and `shell.qml` available under `~/.config/quickshell/`.
+
