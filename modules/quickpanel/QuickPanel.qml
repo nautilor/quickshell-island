@@ -52,20 +52,22 @@ Rectangle {
 
 					Text {
 						text: quickPanel.time
-						color: colors.windowForeground
+						color: timeColumnMouseArea.containsMouse ? colors.primary : colors.windowForeground
 						font.pixelSize: 38
 						font.weight: Font.Medium
 					}
 
 					Text {
 						text: quickPanel.date
-						color: colors.windowForeground
+						color: timeColumnMouseArea.containsMouse ? colors.primary : colors.windowForeground
 						font.pixelSize: 13
 						opacity: 0.85
 					}
 				}
 				MouseArea {
+					id: timeColumnMouseArea
 					anchors.fill: timeColumn
+					hoverEnabled: true
 					cursorShape: Qt.PointingHandCursor
 					onClicked: quickPanel.calendarRequested()
 				}
