@@ -4,6 +4,7 @@ import QtQuick.Effects
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
+import qs.modules.calendar
 import qs.modules.clipboard
 import qs.modules.colors
 import qs.modules.launcher
@@ -20,8 +21,9 @@ PanelWindow {
 	property bool quickPanelOpen: false
 	property bool launcherPanelOpen: false
 	property bool clipboardPanelOpen: false
-	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0 || volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
-	readonly property bool modalOpen: launcherPanelOpen || clipboardPanelOpen
+	property bool calendarPanelOpen: false
+	property bool somethingOpen: quickPanelOpen || calendarPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0 || volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
+	readonly property bool modalOpen: launcherPanelOpen || clipboardPanelOpen || calendarPanelOpen
 	property bool osdOpen: !modalOpen && (volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0)
 
 	readonly property int maxHeight: 700
@@ -37,6 +39,9 @@ PanelWindow {
 
 	readonly property int clipboardPanelHeight: 460
 	readonly property int clipboardPanelWidth: 590
+
+	readonly property int calendarPanelHeight: 400
+	readonly property int calendarPanelWidth: 590
 
 	readonly property int normalHeight: 45
 	readonly property int normalWidth: 100
@@ -70,6 +75,8 @@ PanelWindow {
 			return bar.clipboardPanelHeight
 		} else if (bar.launcherPanelOpen) {
 			return bar.launcherPanelHeight
+		} else if (bar.calendarPanelOpen) {
+			return bar.calendarPanelHeight
 		} else if (osd) {
 			return osd.implicitHeight
 		} else if (notificationPanel.opacity > 0) {
@@ -87,6 +94,8 @@ PanelWindow {
 			return bar.clipboardPanelWidth
 		} else if (bar.launcherPanelOpen) {
 			return bar.launcherPanelWidth
+		} else if (bar.calendarPanelOpen) {
+			return bar.calendarPanelWidth
 		} else if (osd) {
 			return osd.implicitWidth
 		} else if (notificationPanel.opacity > 0) {
@@ -96,6 +105,11 @@ PanelWindow {
 		} else {
 			return bar.normalWidth
 		}
+	}
+
+	function openCalendar() {
+		bar.quickPanelOpen = false
+		bar.calendarPanelOpen = true
 	}
 
 	function closeQuickPanel() {
@@ -151,6 +165,8 @@ PanelWindow {
 				} else if (bar.clipboardPanelOpen) {
 					bar.clipboardPanelOpen = false
 					bar.focusable = false
+				} else if (bar.calendarPanelOpen) {
+					bar.calendarPanelOpen = false
 				} else {
 					bar.quickPanelOpen = !bar.quickPanelOpen
 				}
@@ -202,6 +218,24 @@ PanelWindow {
 			}
 		}
 
+		Calendar {
+			id: calendarPanel
+			barWindow: bar
+			opacity: bar.calendarPanelOpen ? 1 : 0
+			visible: bar.calendarPanelOpen || opacity > 0
+			anchors.fill: parent
+			onCloseRequested: bar.calendarPanelOpen = false
+
+			Behavior on opacity {
+				NumberAnimation {
+					duration: bar.calendarPanelOpen ? 150 : 250
+					easing.type: bar.calendarPanelOpen
+					? Easing.OutCubic
+					: Easing.InCubic
+				}
+			}
+		}
+
 		Launcher {
 			id: launcherPanel
 			barWindow: bar
@@ -230,6 +264,7 @@ PanelWindow {
 			visible: bar.quickPanelOpen || opacity > 0
 			anchors.fill: parent
 			onCloseRequested: bar.closeQuickPanel()
+			onCalendarRequested: bar.openCalendar()
 
 			Behavior on opacity {
 				NumberAnimation {
@@ -309,6 +344,7 @@ PanelWindow {
 			bar.launcherPanelOpen = !bar.launcherPanelOpen
 			bar.quickPanelOpen = false
 			bar.clipboardPanelOpen = false
+			bar.calendarPanelOpen = false
 		}
 	}
 
@@ -317,6 +353,7 @@ PanelWindow {
 		function toggle() {
 			bar.focusable = !bar.clipboardPanelOpen
 			bar.clipboardPanelOpen = !bar.clipboardPanelOpen
+			bar.calendarPanelOpen = false
 		}
 	}
 
@@ -328,6 +365,7 @@ PanelWindow {
 				launcherPanelOpen = false
 				clipboardPanelOpen = false
 				quickPanelOpen = false
+				calendarPanelOpen = false
 				bar.focusable = false
 			}
 			volumeOsd.showVolume()
@@ -338,6 +376,7 @@ PanelWindow {
 				launcherPanelOpen = false
 				clipboardPanelOpen = false
 				quickPanelOpen = false
+				calendarPanelOpen = false
 				bar.focusable = false
 			}
 			brightnessOsd.refreshBrightness()

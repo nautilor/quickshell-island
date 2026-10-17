@@ -7,6 +7,7 @@ import qs.modules.colors
 Item {
 	id: quickPanel
 	signal closeRequested()
+	signal calendarRequested()
 	property string time: Qt.formatDateTime(new Date(), "h:mm")
 	property string date: Qt.formatDateTime(new Date(), "ddd, MMM d")
 	property var barWindow: null
@@ -45,6 +46,7 @@ Rectangle {
 				height: 52
 
 				Column {
+					id: timeColumn
 					anchors.left: parent.left
 					anchors.top: parent.top
 
@@ -61,6 +63,11 @@ Rectangle {
 						font.pixelSize: 13
 						opacity: 0.85
 					}
+				}
+				MouseArea {
+					anchors.fill: timeColumn
+					cursorShape: Qt.PointingHandCursor
+					onClicked: quickPanel.calendarRequested()
 				}
 				Tray {}
 			}
