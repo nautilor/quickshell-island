@@ -86,6 +86,62 @@ Item {
 		return result
 	}
 
+	readonly property real hourHeight: 48
+
+	// lay out timed events of a day in side-by-side lanes (overlapping events share the width)
+	function timedLayout(day) {
+		const ds = startOfDay(day)
+		const de = new Date(ds.getFullYear(), ds.getMonth(), ds.getDate() + 1)
+		const items = []
+		for (const it of eventsOn(day)) {
+			if (it.ev.allDay)
+				continue
+			const s = it.start < ds ? ds : it.start
+			const e = it.end > de ? de : it.end
+			const sm = (s - ds) / 60000
+			const em = Math.max((e - ds) / 60000, sm + 30)
+			items.push({ ev: it.ev, start: it.start, end: it.end, sm: sm, em: em, lane: 0, lanes: 1 })
+		}
+		items.sort((a, b) => a.sm - b.sm || b.em - a.em)
+		let cluster = [], clusterEnd = -1, laneEnds = []
+		const flush = () => {
+			for (const c of cluster)
+				c.lanes = laneEnds.length
+			cluster = []
+			laneEnds = []
+		}
+		for (const it of items) {
+			if (it.sm >= clusterEnd)
+				flush()
+			let lane = laneEnds.findIndex(end => end <= it.sm)
+			if (lane < 0) {
+				lane = laneEnds.length
+				laneEnds.push(0)
+			}
+			laneEnds[lane] = it.em
+			it.lane = lane
+			cluster.push(it)
+			clusterEnd = cluster.length === 1 ? it.em : Math.max(clusterEnd, it.em)
+		}
+		flush()
+		return items
+	}
+
+	function allDayEvents(day) {
+		return eventsOn(day).filter(it => it.ev.allDay)
+	}
+
+	function scrollTimeline() {
+		let minute = 8 * 60
+		const laid = timedLayout(selected)
+		if (laid.length > 0)
+			minute = laid[0].sm
+		else if (sameDay(selected, today))
+			minute = today.getHours() * 60
+		const maxY = Math.max(0, timeline.contentHeight - timeline.height)
+		timeline.contentY = Math.max(0, Math.min(maxY, minute / 60 * hourHeight - 12))
+	}
+
 	function timeLabel(item) {
 		if (item.ev.allDay)
 			return "All day"
@@ -519,87 +575,146 @@ Item {
 						wrapMode: Text.WordWrap
 					}
 
-					ScrollView {
+					// all-day events
+					Flow {
+						Layout.fillWidth: true
+						spacing: 6
+						visible: allDayRepeater.count > 0
+
+						Repeater {
+							id: allDayRepeater
+							model: (root.events, root.allDayEvents(root.selected))
+
+							Rectangle {
+								required property var modelData
+								height: 24
+								width: Math.min(chipText.implicitWidth + 20, 340)
+								radius: 12
+								color: Qt.alpha(modelData.ev.color, 0.30)
+
+								Text {
+									id: chipText
+									anchors.fill: parent
+									anchors.leftMargin: 10
+									anchors.rightMargin: 10
+									verticalAlignment: Text.AlignVCenter
+									text: parent.modelData.ev.title
+									color: root.textPrimary
+									font.pixelSize: 12
+									font.weight: Font.Medium
+									elide: Text.ElideRight
+								}
+							}
+						}
+					}
+
+					// day timeline
+					Flickable {
+						id: timeline
 						Layout.fillWidth: true
 						Layout.fillHeight: true
 						clip: true
-						ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-						ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+						contentWidth: width
+						contentHeight: 24 * root.hourHeight + 16
+						boundsBehavior: Flickable.StopAtBounds
 
-						ListView {
-							id: eventList
-							spacing: 8
-							model: (root.events, root.eventsOn(root.selected))
+						Connections {
+							target: root
+							function onSelectedChanged() { root.scrollTimeline() }
+							function onLoadedKeyChanged() { root.scrollTimeline() }
+							function onVisibleChanged() { if (root.visible) root.scrollTimeline() }
+						}
 
-							Text {
-								anchors.centerIn: parent
-								visible: eventList.count === 0 && !root.loading
-								text: "No events"
-								color: root.textMuted
-								font.pixelSize: 12
+						Repeater {
+							model: 24
+
+							Item {
+								required property int index
+								y: index * root.hourHeight + 8
+								width: timeline.width
+								height: root.hourHeight
+
+								Text {
+									x: 0
+									y: -7
+									width: 36
+									text: Qt.formatTime(new Date(2000, 0, 1, parent.index, 0), "hh:mm")
+									color: root.textMuted
+									font.pixelSize: 10
+								}
+
+								Rectangle {
+									x: 42
+									width: parent.width - 42
+									height: 1
+									color: Qt.rgba(1, 1, 1, 0.08)
+								}
 							}
+						}
 
-							delegate: Rectangle {
-								id: card
-								required property var modelData
-								width: eventList.width
-								height: 60
-								radius: 18
-								color: cardArea.containsMouse ? Qt.lighter(root.bgSecondary, 1.5) : root.bgSecondary
+						Item {
+							id: lanesArea
+							x: 46
+							y: 8
+							width: timeline.width - 46
+							height: 24 * root.hourHeight
 
-								Behavior on color {
-									ColorAnimation { duration: 180; easing.type: Easing.OutCubic }
-								}
+							Repeater {
+								model: (root.events, root.timedLayout(root.selected))
 
-								MouseArea {
-									id: cardArea
-									anchors.fill: parent
-									hoverEnabled: true
-								}
+								Rectangle {
+									id: block
+									required property var modelData
+									readonly property real laneWidth: lanesArea.width / modelData.lanes
+									x: modelData.lane * laneWidth
+									y: modelData.sm / 60 * root.hourHeight + 1
+									width: laneWidth - 2 + (modelData.lane < modelData.lanes - 1 ? 8 : 0)
+									z: modelData.lane
+									height: Math.max(20, (modelData.em - modelData.sm) / 60 * root.hourHeight - 2)
+									radius: 8
+									color: Qt.tint(root.bgPrimary, Qt.alpha(modelData.ev.color, 0.38))
+									border.width: 1
+									border.color: Qt.alpha(modelData.ev.color, 0.9)
+									clip: true
 
-								RowLayout {
-									anchors.fill: parent
-									anchors.margins: 10
-									spacing: 10
-
-									Rectangle {
-										Layout.preferredWidth: 40
-										Layout.preferredHeight: 40
-										radius: 12
-										color: Qt.rgba(1, 1, 1, 0.06)
-
-										Rectangle {
-											anchors.centerIn: parent
-											width: 12
-											height: 12
-											radius: 6
-											color: card.modelData.ev.color
-										}
-									}
-
-									ColumnLayout {
-										Layout.fillWidth: true
-										spacing: 2
+									Column {
+										anchors.fill: parent
+										anchors.margins: 5
+										anchors.leftMargin: 7
+										spacing: 0
 
 										Text {
-											Layout.fillWidth: true
-											text: card.modelData.ev.title
+											width: parent.width
+											text: block.modelData.ev.title
 											color: root.textPrimary
-											font.pixelSize: 14
+											font.pixelSize: 12
 											font.weight: Font.Medium
 											elide: Text.ElideRight
 										}
 
 										Text {
-											Layout.fillWidth: true
-											text: root.timeLabel(card.modelData) + (card.modelData.ev.location !== "" ? "  ·  " + card.modelData.ev.location : "")
+											width: parent.width
+											visible: block.height >= 40
+											text: root.timeLabel(block.modelData)
 											color: root.textMuted
-											font.pixelSize: 12
+											font.pixelSize: 11
 											elide: Text.ElideRight
 										}
 									}
 								}
 							}
+						}
+
+						// current time
+						Rectangle {
+							visible: root.sameDay(root.selected, root.today)
+							x: 42
+							y: 8 + (root.today.getHours() * 60 + root.today.getMinutes()) / 60 * root.hourHeight
+							width: timeline.width - 42
+							height: 2
+							radius: 1
+							color: colors.error
+							z: 10
 						}
 					}
 				}
