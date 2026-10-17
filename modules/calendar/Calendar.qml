@@ -28,6 +28,23 @@ Item {
 	property string loadedKey: ""
 	property string requestedKey: ""
 
+	// editor state
+	property bool editing: false
+	property bool saving: false
+	property string editId: ""
+	property string editCalendarId: ""
+	property string editTitle: ""
+	property string editLocation: ""
+	property bool editAllDay: false
+	property string editStartDate: ""
+	property string editStartTime: ""
+	property string editEndDate: ""
+	property string editEndTime: ""
+	property string editError: ""
+	property var writableCalendars: []
+	property bool reauth: false
+
+	readonly property string scriptPath: Quickshell.env("HOME") + "/.config/quickshell/bin/gcal.py"
 	readonly property string script: "$HOME/.config/quickshell/bin/gcal.py"
 	readonly property var weekdayNames: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -148,6 +165,124 @@ Item {
 		return Qt.formatTime(item.start, "hh:mm") + " – " + Qt.formatTime(item.end, "hh:mm")
 	}
 
+	// ─── editor ─────────────────────────────────────
+
+	function pad(n) {
+		return (n < 10 ? "0" : "") + n
+	}
+
+	function fmtDate(d) {
+		return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+	}
+
+	function fmtTime(d) {
+		return pad(d.getHours()) + ":" + pad(d.getMinutes())
+	}
+
+	function openEditor(ev) {
+		editError = ""
+		saving = false
+		if (ev) {
+			editId = ev.id
+			editCalendarId = ev.calendarId
+			editTitle = ev.title
+			editLocation = ev.location
+			editAllDay = ev.allDay
+			const s = parseEventDate(ev.start, ev.allDay)
+			let e = parseEventDate(ev.end, ev.allDay)
+			if (ev.allDay)
+				e = new Date(e.getFullYear(), e.getMonth(), e.getDate() - 1)
+			editStartDate = fmtDate(s)
+			editEndDate = fmtDate(e)
+			editStartTime = ev.allDay ? "09:00" : fmtTime(s)
+			editEndTime = ev.allDay ? "10:00" : fmtTime(e)
+		} else {
+			const now = new Date()
+			let hour = sameDay(selected, now) ? now.getHours() + 1 : 9
+			if (hour > 22)
+				hour = 22
+			editId = ""
+			const primary = writableCalendars.find(c => c.primary) || writableCalendars[0]
+			editCalendarId = primary ? primary.id : ""
+			editTitle = ""
+			editLocation = ""
+			editAllDay = false
+			editStartDate = fmtDate(selected)
+			editEndDate = fmtDate(selected)
+			editStartTime = pad(hour) + ":00"
+			editEndTime = pad(hour + 1) + ":00"
+		}
+		editing = true
+	}
+
+	function closeEditor() {
+		editing = false
+		saving = false
+	}
+
+	function validate() {
+		const dateRe = /^\d{4}-\d{2}-\d{2}$/
+		const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/
+		if (editTitle.trim() === "")
+			return "Title is required."
+		if (editCalendarId === "")
+			return "No writable calendar."
+		if (!dateRe.test(editStartDate) || !dateRe.test(editEndDate))
+			return "Dates use YYYY-MM-DD."
+		if (!editAllDay && (!timeRe.test(editStartTime) || !timeRe.test(editEndTime)))
+			return "Times use HH:MM."
+		const s = editAllDay ? editStartDate : editStartDate + "T" + editStartTime
+		const e = editAllDay ? editEndDate : editEndDate + "T" + editEndTime
+		if (e < s || (!editAllDay && e === s))
+			return "End must be after start."
+		return ""
+	}
+
+	function saveEvent() {
+		const err = validate()
+		if (err !== "") {
+			editError = err
+			return
+		}
+		editError = ""
+		saving = true
+		const payload = {
+			calendarId: editCalendarId,
+			title: editTitle.trim(),
+			location: editLocation.trim(),
+			allDay: editAllDay,
+			start: editAllDay ? editStartDate : editStartDate + "T" + editStartTime,
+			end: editAllDay ? editEndDate : editEndDate + "T" + editEndTime
+		}
+		if (editId !== "")
+			payload.id = editId
+		saveProcess.command = ["python3", scriptPath, "save", JSON.stringify(payload)]
+		saveProcess.running = true
+	}
+
+	function deleteEvent() {
+		saving = true
+		deleteProcess.command = ["python3", scriptPath, "delete", editCalendarId, editId]
+		deleteProcess.running = true
+	}
+
+	function editResult(text) {
+		saving = false
+		try {
+			const r = JSON.parse(text)
+			if (r.error) {
+				editError = r.error === "scope" ? "No write access. Sign out and sign in again."
+					: r.error === "network" ? "Offline." : "Failed (" + r.error + ")"
+				return
+			}
+		} catch (e) {
+			editError = "Unexpected response."
+			return
+		}
+		closeEditor()
+		refresh()
+	}
+
 	function shiftMonth(delta) {
 		const d = new Date(viewYear, viewMonth + delta, 1)
 		viewYear = d.getFullYear()
@@ -193,6 +328,7 @@ Item {
 				try {
 					const r = JSON.parse(this.text)
 					root.authState = r.state
+					root.reauth = !!r.reauth
 					if (r.clientFile)
 						root.clientFile = r.clientFile
 					if (r.state === "ready")
@@ -221,11 +357,26 @@ Item {
 					}
 					root.errorText = ""
 					root.events = r.events
+					root.writableCalendars = r.calendars || []
 					root.loadedKey = root.requestedKey
 				} catch (e) {
 					root.errorText = "Could not read calendar data."
 				}
 			}
+		}
+	}
+
+	Process {
+		id: saveProcess
+		stdout: StdioCollector {
+			onStreamFinished: root.editResult(this.text)
+		}
+	}
+
+	Process {
+		id: deleteProcess
+		stdout: StdioCollector {
+			onStreamFinished: root.editResult(this.text)
 		}
 	}
 
@@ -257,6 +408,8 @@ Item {
 	}
 
 	onVisibleChanged: {
+		if (!visible)
+			closeEditor()
 		if (visible) {
 			today = new Date()
 			if (authState === "ready")
@@ -316,6 +469,7 @@ Item {
 				font.weight: Font.Medium
 				text: root.authState === "checking" ? "Checking Google Calendar…"
 					: root.authState === "no-client" ? "Google OAuth client missing"
+					: root.reauth ? "Sign in again to allow editing events"
 					: "Sign in to see your events"
 			}
 
@@ -409,6 +563,7 @@ Item {
 
 					Repeater {
 						model: [
+							{ g: "󰐕", act: "add" },
 							{ g: "󰅁", act: "prev" },
 							{ g: "󰅂", act: "next" },
 						]
@@ -441,7 +596,8 @@ Item {
 								cursorShape: Qt.PointingHandCursor
 								onClicked: {
 									const a = hdrBtn.modelData.act
-									if (a === "prev") root.shiftMonth(-1)
+									if (a === "add") root.openEditor(null)
+									else if (a === "prev") root.shiftMonth(-1)
 									else if (a === "next") root.shiftMonth(1)
 									else if (a === "today") root.goToday()
 									else logoutProcess.running = true
@@ -592,6 +748,13 @@ Item {
 								radius: 12
 								color: Qt.alpha(modelData.ev.color, 0.30)
 
+								MouseArea {
+									anchors.fill: parent
+									enabled: parent.modelData.ev.canEdit
+									cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+									onClicked: root.openEditor(parent.modelData.ev)
+								}
+
 								Text {
 									id: chipText
 									anchors.fill: parent
@@ -677,6 +840,13 @@ Item {
 									border.color: Qt.alpha(modelData.ev.color, 0.9)
 									clip: true
 
+									MouseArea {
+										anchors.fill: parent
+										enabled: block.modelData.ev.canEdit
+										cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+										onClicked: root.openEditor(block.modelData.ev)
+									}
+
 									Column {
 										anchors.fill: parent
 										anchors.margins: 5
@@ -715,6 +885,332 @@ Item {
 							radius: 1
 							color: colors.error
 							z: 10
+						}
+					}
+				}
+			}
+		}
+
+		// ─── event editor ───────────────────────────
+		Rectangle {
+			id: editor
+			anchors.fill: parent
+			radius: parent.radius
+			color: root.bgPrimary
+			visible: root.editing
+			z: 20
+
+			MouseArea {
+				anchors.fill: parent
+			}
+
+			Keys.onEscapePressed: root.closeEditor()
+
+			onVisibleChanged: {
+				if (visible) {
+					titleField.forceActiveFocus()
+					if (root.barWindow)
+						root.barWindow.focusable = true
+				} else if (root.barWindow) {
+					root.barWindow.focusable = false
+				}
+			}
+
+			component Field: Rectangle {
+				id: field
+				property alias text: input.text
+				property string placeholder: ""
+				property alias input: input
+				property real labelWidth: 0
+				signal accepted()
+				Layout.preferredHeight: 40
+				radius: 50
+				color: root.bgSecondary
+				border.width: input.activeFocus ? 1 : 0
+				border.color: root.accent
+
+				TextField {
+					id: input
+					anchors.fill: parent
+					anchors.leftMargin: 16
+					anchors.rightMargin: 16
+					placeholderText: field.placeholder
+					font.pixelSize: 14
+					color: root.textPrimary
+					selectionColor: root.accent
+					selectedTextColor: root.bgPrimary
+					placeholderTextColor: root.textMuted
+					background: Rectangle { color: "transparent" }
+					onAccepted: field.accepted()
+					Keys.onEscapePressed: root.closeEditor()
+				}
+			}
+
+			ColumnLayout {
+				anchors.fill: parent
+				anchors.margins: 14
+				spacing: 6
+
+				RowLayout {
+					Layout.fillWidth: true
+
+					Text {
+						Layout.fillWidth: true
+						text: root.editId === "" ? "New event" : "Edit event"
+						color: root.textPrimary
+						font.pixelSize: 16
+						font.weight: Font.Medium
+					}
+
+					Rectangle {
+						Layout.preferredHeight: 30
+						implicitWidth: allDayText.implicitWidth + 28
+						radius: 50
+						color: root.editAllDay ? root.accent : root.bgSecondary
+
+						Behavior on color {
+							ColorAnimation { duration: 180; easing.type: Easing.OutCubic }
+						}
+
+						Text {
+							id: allDayText
+							anchors.centerIn: parent
+							text: "All day"
+							color: root.editAllDay ? root.accentForeground : root.textPrimary
+							font.pixelSize: 12
+							font.weight: Font.Medium
+						}
+
+						MouseArea {
+							anchors.fill: parent
+							cursorShape: Qt.PointingHandCursor
+							onClicked: root.editAllDay = !root.editAllDay
+						}
+					}
+				}
+
+				Field {
+					id: titleField
+					Layout.fillWidth: true
+					placeholder: "Title"
+					text: root.editTitle
+					onTextChanged: root.editTitle = text
+					onAccepted: root.saveEvent()
+					input.KeyNavigation.tab: locationField.input
+				}
+
+				Field {
+					id: locationField
+					Layout.fillWidth: true
+					placeholder: "Location"
+					text: root.editLocation
+					onTextChanged: root.editLocation = text
+					onAccepted: root.saveEvent()
+					input.KeyNavigation.tab: startDateField.input
+				}
+
+				RowLayout {
+					Layout.fillWidth: true
+					spacing: 8
+
+					Field {
+						id: startDateField
+						Layout.fillWidth: true
+						placeholder: "YYYY-MM-DD"
+						text: root.editStartDate
+						onTextChanged: root.editStartDate = text
+						onAccepted: root.saveEvent()
+						input.KeyNavigation.tab: startTimeField.input
+					}
+
+					Field {
+						id: startTimeField
+						Layout.preferredWidth: 110
+						visible: !root.editAllDay
+						placeholder: "HH:MM"
+						text: root.editStartTime
+						onTextChanged: root.editStartTime = text
+						onAccepted: root.saveEvent()
+						input.KeyNavigation.tab: endDateField.input
+					}
+				}
+
+				RowLayout {
+					Layout.fillWidth: true
+					spacing: 8
+
+					Field {
+						id: endDateField
+						Layout.fillWidth: true
+						placeholder: "YYYY-MM-DD"
+						text: root.editEndDate
+						onTextChanged: root.editEndDate = text
+						onAccepted: root.saveEvent()
+						input.KeyNavigation.tab: endTimeField.input
+					}
+
+					Field {
+						id: endTimeField
+						Layout.preferredWidth: 110
+						visible: !root.editAllDay
+						placeholder: "HH:MM"
+						text: root.editEndTime
+						onTextChanged: root.editEndTime = text
+						onAccepted: root.saveEvent()
+						input.KeyNavigation.tab: titleField.input
+					}
+				}
+
+				// calendar picker (new events only), scrolls sideways when crowded
+				Flickable {
+					Layout.fillWidth: true
+					Layout.preferredHeight: 32
+					visible: root.editId === "" && root.writableCalendars.length > 1
+					clip: true
+					contentWidth: calRow.width
+					contentHeight: height
+					flickableDirection: Flickable.HorizontalFlick
+					boundsBehavior: Flickable.StopAtBounds
+
+					Row {
+						id: calRow
+						spacing: 6
+
+						Repeater {
+							model: root.writableCalendars
+
+							Rectangle {
+								id: calChip
+								required property var modelData
+								readonly property bool chosen: root.editCalendarId === modelData.id
+								height: 32
+								width: Math.min(calText.implicitWidth, 120) + 38
+								radius: 50
+								color: chosen ? Qt.alpha(modelData.color, 0.35) : root.bgSecondary
+								border.width: chosen ? 1 : 0
+								border.color: modelData.color
+
+								Rectangle {
+									x: 12
+									anchors.verticalCenter: parent.verticalCenter
+									width: 8
+									height: 8
+									radius: 4
+									color: calChip.modelData.color
+								}
+
+								Text {
+									id: calText
+									anchors.fill: parent
+									anchors.leftMargin: 26
+									anchors.rightMargin: 12
+									verticalAlignment: Text.AlignVCenter
+									text: calChip.modelData.name
+									color: root.textPrimary
+									font.pixelSize: 12
+									elide: Text.ElideRight
+								}
+
+								MouseArea {
+									anchors.fill: parent
+									cursorShape: Qt.PointingHandCursor
+									onClicked: root.editCalendarId = calChip.modelData.id
+								}
+							}
+						}
+					}
+				}
+
+				Text {
+					Layout.fillWidth: true
+					visible: root.editError !== ""
+					text: root.editError
+					color: colors.error
+					font.pixelSize: 12
+					wrapMode: Text.WordWrap
+				}
+
+				Item { Layout.fillHeight: true }
+
+				RowLayout {
+					Layout.fillWidth: true
+					spacing: 8
+
+					Rectangle {
+						visible: root.editId !== ""
+						Layout.preferredHeight: 40
+						implicitWidth: delText.implicitWidth + 36
+						radius: 50
+						color: delArea.containsMouse ? Qt.alpha(colors.error, 0.28) : root.bgSecondary
+
+						Text {
+							id: delText
+							anchors.centerIn: parent
+							text: "Delete"
+							color: colors.error
+							font.pixelSize: 14
+							font.weight: Font.Medium
+						}
+
+						MouseArea {
+							id: delArea
+							anchors.fill: parent
+							hoverEnabled: true
+							enabled: !root.saving
+							cursorShape: Qt.PointingHandCursor
+							onClicked: root.deleteEvent()
+						}
+					}
+
+					Item { Layout.fillWidth: true }
+
+					Rectangle {
+						Layout.preferredHeight: 40
+						implicitWidth: cancelText.implicitWidth + 36
+						radius: 50
+						color: cancelArea.containsMouse ? Qt.lighter(root.bgSecondary, 1.5) : root.bgSecondary
+
+						Text {
+							id: cancelText
+							anchors.centerIn: parent
+							text: "Cancel"
+							color: root.textPrimary
+							font.pixelSize: 14
+							font.weight: Font.Medium
+						}
+
+						MouseArea {
+							id: cancelArea
+							anchors.fill: parent
+							hoverEnabled: true
+							cursorShape: Qt.PointingHandCursor
+							onClicked: root.closeEditor()
+						}
+					}
+
+					Rectangle {
+						Layout.preferredHeight: 40
+						implicitWidth: saveText.implicitWidth + 40
+						radius: 50
+						color: saveArea.containsMouse ? Qt.lighter(root.accent, 1.12) : root.accent
+						opacity: root.saving ? 0.6 : 1
+
+						Text {
+							id: saveText
+							anchors.centerIn: parent
+							text: root.saving ? "Saving…" : "Save"
+							color: root.accentForeground
+							font.pixelSize: 14
+							font.weight: Font.Medium
+						}
+
+						MouseArea {
+							id: saveArea
+							anchors.fill: parent
+							hoverEnabled: true
+							enabled: !root.saving
+							cursorShape: Qt.PointingHandCursor
+							onClicked: root.saveEvent()
 						}
 					}
 				}

@@ -4,7 +4,9 @@
   gcal.py status                 -> {"state": "no-client"|"logged-out"|"ready"}
   gcal.py login                  -> OAuth loopback login (opens browser)
   gcal.py logout
-  gcal.py events START END       -> JSON list, dates are YYYY-MM-DD (END exclusive)
+  gcal.py events START END       -> {"events": [...], "calendars": [writable ...]}; dates YYYY-MM-DD (END exclusive)
+  gcal.py save JSON              -> create (no "id") or patch an event
+  gcal.py delete CALENDAR_ID EVENT_ID
 
 Setup: create an OAuth client of type "Desktop app" in Google Cloud Console,
 enable the Google Calendar API, and save
@@ -13,11 +15,11 @@ Token is stored in ~/.local/share/quickshell-island/gcal-token.json (0600).
 """
 import base64, hashlib, http.server, json, os, secrets, sys, time
 import urllib.parse, urllib.request, urllib.error, webbrowser
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 
 CLIENT_FILE = os.path.expanduser("~/.config/quickshell/gcal/client.json")
 TOKEN_FILE = os.path.expanduser("~/.local/share/quickshell-island/gcal-token.json")
-SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
+SCOPE = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 API = "https://www.googleapis.com/calendar/v3"
@@ -55,10 +57,16 @@ def post(url, data):
         return json.load(r)
 
 
-def get(url, token):
-    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
+def get(url, token, method="GET", body=None):
+    headers = {"Authorization": "Bearer " + token}
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode()
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
     with urllib.request.urlopen(req, timeout=15) as r:
-        return json.load(r)
+        raw = r.read()
+        return json.loads(raw) if raw else {}
 
 
 def access_token():
@@ -85,7 +93,13 @@ def access_token():
 def cmd_status():
     if not load_client():
         return out({"state": "no-client", "clientFile": CLIENT_FILE})
-    out({"state": "ready" if load_json(TOKEN_FILE) else "logged-out"})
+    tok = load_json(TOKEN_FILE)
+    if not tok:
+        return out({"state": "logged-out"})
+    if "calendar.events" not in tok.get("scope", ""):
+        # token predates write access: sign in again
+        return out({"state": "logged-out", "reauth": True})
+    out({"state": "ready"})
 
 
 def cmd_login():
@@ -157,6 +171,11 @@ def cmd_events(start, end):
     try:
         cals = get(API + "/users/me/calendarList?minAccessRole=reader", token).get("items", [])
         events = []
+        writable = [
+            {"id": c["id"], "name": c.get("summaryOverride") or c.get("summary", ""),
+             "color": c.get("backgroundColor", "#8CC8D9"), "primary": bool(c.get("primary"))}
+            for c in cals if c.get("accessRole") in ("owner", "writer")
+        ]
         for cal in cals:
             if cal.get("selected") is False:
                 continue
@@ -177,13 +196,60 @@ def cmd_events(start, end):
                     "end": e.get("dateTime") or e.get("date"),
                     "location": ev.get("location", ""),
                     "calendar": cal.get("summaryOverride") or cal.get("summary", ""),
+                    "calendarId": cal["id"],
+                    "canEdit": cal.get("accessRole") in ("owner", "writer") and ev.get("eventType", "default") == "default",
                     "color": cal.get("backgroundColor", "#8CC8D9"),
                 })
     except urllib.error.HTTPError as e:
         return out({"error": "auth" if e.code in (401, 403) else "http-%d" % e.code})
     except (urllib.error.URLError, OSError):
         return out({"error": "network"})
-    out({"events": events})
+    out({"events": events, "calendars": writable})
+
+
+def local_iso(s):
+    return datetime.fromisoformat(s).astimezone().isoformat()
+
+
+def cmd_save(raw):
+    token = access_token()
+    if not token:
+        return out({"error": "auth"})
+    d = json.loads(raw)
+    if d["allDay"]:
+        end = (datetime.fromisoformat(d["end"][:10]) + timedelta(days=1)).strftime("%Y-%m-%d")
+        start = {"date": d["start"][:10], "dateTime": None}
+        end = {"date": end, "dateTime": None}
+    else:
+        start = {"dateTime": local_iso(d["start"]), "date": None}
+        end = {"dateTime": local_iso(d["end"]), "date": None}
+    body = {"summary": d["title"], "location": d.get("location", ""), "start": start, "end": end}
+    cid = urllib.parse.quote(d["calendarId"], safe="")
+    try:
+        if d.get("id"):
+            get("%s/calendars/%s/events/%s" % (API, cid, urllib.parse.quote(d["id"], safe="")), token, "PATCH", body)
+        else:
+            for k in ("start", "end"):
+                body[k] = {a: b for a, b in body[k].items() if b is not None}
+            get("%s/calendars/%s/events" % (API, cid), token, "POST", body)
+    except urllib.error.HTTPError as e:
+        return out({"error": "scope" if e.code == 403 else "auth" if e.code == 401 else "http-%d" % e.code})
+    except (urllib.error.URLError, OSError):
+        return out({"error": "network"})
+    out({"ok": True})
+
+
+def cmd_delete(calendar_id, event_id):
+    token = access_token()
+    if not token:
+        return out({"error": "auth"})
+    try:
+        get("%s/calendars/%s/events/%s" % (API, urllib.parse.quote(calendar_id, safe=""), urllib.parse.quote(event_id, safe="")), token, "DELETE")
+    except urllib.error.HTTPError as e:
+        return out({"error": "scope" if e.code == 403 else "http-%d" % e.code})
+    except (urllib.error.URLError, OSError):
+        return out({"error": "network"})
+    out({"ok": True})
 
 
 if __name__ == "__main__":
@@ -192,4 +258,6 @@ if __name__ == "__main__":
     elif a[:1] == ["login"]: cmd_login()
     elif a[:1] == ["logout"]: cmd_logout()
     elif a[:1] == ["events"] and len(a) == 3: cmd_events(a[1], a[2])
+    elif a[:1] == ["save"] and len(a) == 2: cmd_save(a[1])
+    elif a[:1] == ["delete"] and len(a) == 3: cmd_delete(a[1], a[2])
     else: sys.exit(__doc__)

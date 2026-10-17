@@ -16,7 +16,7 @@ import qs.modules.bar.components
 PanelWindow {
 	id: bar
 	focusable: false
-	WlrLayershell.keyboardFocus: bar.launcherPanelOpen || bar.clipboardPanelOpen
+	WlrLayershell.keyboardFocus: bar.launcherPanelOpen || bar.clipboardPanelOpen || calendarPanel.editing
 
 	property bool quickPanelOpen: false
 	property bool launcherPanelOpen: false
@@ -40,7 +40,7 @@ PanelWindow {
 	readonly property int clipboardPanelHeight: 460
 	readonly property int clipboardPanelWidth: 590
 
-	readonly property int calendarPanelHeight: 400
+	readonly property int calendarPanelHeight: 430
 	readonly property int calendarPanelWidth: 590
 
 	readonly property int normalHeight: 45
