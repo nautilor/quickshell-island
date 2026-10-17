@@ -354,9 +354,7 @@ Item {
 					Repeater {
 						model: [
 							{ g: "󰅁", act: "prev" },
-							{ g: "󰃭", act: "today" },
 							{ g: "󰅂", act: "next" },
-							{ g: "󰍃", act: "logout" }
 						]
 
 						Rectangle {
@@ -440,7 +438,6 @@ Item {
 								readonly property bool inMonth: day.getMonth() === root.viewMonth
 								readonly property bool isToday: root.sameDay(day, root.today)
 								readonly property bool isSelected: root.sameDay(day, root.selected)
-								readonly property var dayEvents: (root.events, root.eventsOn(day))
 
 								width: dayGrid.cell
 								height: 40
@@ -460,32 +457,12 @@ Item {
 
 									Text {
 										anchors.centerIn: parent
-										anchors.verticalCenterOffset: cellItem.dayEvents.length > 0 ? -3 : 0
 										text: cellItem.day.getDate()
 										color: cellItem.isSelected ? root.accentForeground
 											: cellItem.isToday ? root.accent : root.textPrimary
 										opacity: cellItem.inMonth || cellItem.isSelected ? 1 : 0.4
 										font.pixelSize: 13
 										font.weight: Font.Medium
-									}
-
-									Row {
-										anchors.horizontalCenter: parent.horizontalCenter
-										anchors.bottom: parent.bottom
-										anchors.bottomMargin: 5
-										spacing: 2
-
-										Repeater {
-											model: Math.min(3, cellItem.dayEvents.length)
-
-											Rectangle {
-												required property int index
-												width: 4
-												height: 4
-												radius: 2
-												color: cellItem.isSelected ? root.accentForeground : cellItem.dayEvents[index].ev.color
-											}
-										}
 									}
 								}
 
