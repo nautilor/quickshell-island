@@ -21,7 +21,8 @@ PanelWindow {
 	property bool launcherPanelOpen: false
 	property bool clipboardPanelOpen: false
 	property bool somethingOpen: quickPanelOpen || launcherPanelOpen || clipboardPanelOpen || notificationPanel.opacity > 0 || volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
-	property bool osdOpen: volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0
+	readonly property bool modalOpen: launcherPanelOpen || clipboardPanelOpen
+	property bool osdOpen: !modalOpen && (volumeOsd.opacity > 0 || brightnessOsd.opacity > 0 || caffeineOsd.opacity > 0 || microphoneOsd.opacity > 0)
 
 	readonly property int maxHeight: 700
 	readonly property int maxWidth: 700
@@ -65,16 +66,16 @@ PanelWindow {
 
 	function panelHeight() {
 		const osd = activeOsd()
-		if (osd) {
+		if (bar.clipboardPanelOpen) {
+			return bar.clipboardPanelHeight
+		} else if (bar.launcherPanelOpen) {
+			return bar.launcherPanelHeight
+		} else if (osd) {
 			return osd.implicitHeight
 		} else if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitHeight
-		} else if (bar.clipboardPanelOpen) {
-			return bar.clipboardPanelHeight
 		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelHeight
-		} else if (bar.launcherPanelOpen) {
-			return bar.launcherPanelHeight
 		} else {
 			return bar.normalHeight
 		}
@@ -82,16 +83,16 @@ PanelWindow {
 
 	function panelWidth() {
 		const osd = activeOsd()
-		if (osd) {
+		if (bar.clipboardPanelOpen) {
+			return bar.clipboardPanelWidth
+		} else if (bar.launcherPanelOpen) {
+			return bar.launcherPanelWidth
+		} else if (osd) {
 			return osd.implicitWidth
 		} else if (notificationPanel.opacity > 0) {
 			return notificationPanel.implicitWidth
-		} else if (bar.clipboardPanelOpen) {
-			return bar.clipboardPanelWidth
 		} else if (bar.quickPanelOpen) {
 			return bar.quickPanelWidth
-		} else if (bar.launcherPanelOpen) {
-			return bar.launcherPanelWidth
 		} else {
 			return bar.normalWidth
 		}
@@ -142,7 +143,7 @@ PanelWindow {
 
 		MouseArea {
 			anchors.fill: parent
-			enabled: volumeOsd.opacity === 0 && brightnessOsd.opacity === 0 && caffeineOsd.opacity === 0 && microphoneOsd.opacity === 0
+			enabled: bar.modalOpen || (volumeOsd.opacity === 0 && brightnessOsd.opacity === 0 && caffeineOsd.opacity === 0 && microphoneOsd.opacity === 0)
 			onClicked: {
 				if (bar.launcherPanelOpen) {
 					bar.launcherPanelOpen = false
@@ -240,41 +241,46 @@ PanelWindow {
 			}
 		}
 
-		Notifications {
-			id: notificationPanel
-			barWindow: bar
-			opacity: notificationPanel.active ? 1 : 0
-			visible: notificationPanel.active || opacity > 0
+		Item {
 			anchors.fill: parent
+			visible: !bar.modalOpen
 
-			Behavior on opacity {
-				NumberAnimation {
-					duration: notificationPanel.active ? 150 : 250
-					easing.type: notificationPanel.active
-					? Easing.OutCubic
-					: Easing.InCubic
+			Notifications {
+				id: notificationPanel
+				barWindow: bar
+				opacity: notificationPanel.active ? 1 : 0
+				visible: notificationPanel.active || opacity > 0
+				anchors.fill: parent
+
+				Behavior on opacity {
+					NumberAnimation {
+						duration: notificationPanel.active ? 150 : 250
+						easing.type: notificationPanel.active
+						? Easing.OutCubic
+						: Easing.InCubic
+					}
 				}
 			}
-		}
 
-		OSD.Volume {
-			id: volumeOsd
-			anchors.fill: parent
-		}
+			OSD.Volume {
+				id: volumeOsd
+				anchors.fill: parent
+			}
 
-		OSD.Brightness {
-			id: brightnessOsd
-			anchors.fill: parent
-		}
+			OSD.Brightness {
+				id: brightnessOsd
+				anchors.fill: parent
+			}
 
-		OSD.Caffeine {
-			id: caffeineOsd
-			anchors.fill: parent
-		}
+			OSD.Caffeine {
+				id: caffeineOsd
+				anchors.fill: parent
+			}
 
-		OSD.Micprone {
-			id: microphoneOsd
-			anchors.fill: parent
+			OSD.Micprone {
+				id: microphoneOsd
+				anchors.fill: parent
+			}
 		}
 
 		Behavior on width {
